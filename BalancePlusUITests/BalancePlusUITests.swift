@@ -1,10 +1,3 @@
-//
-//  BalancePlusUITests.swift
-//  BalancePlusUITests
-//
-//  Created by Самохина Марина Германовна on 06.06.2025.
-//
-
 import XCTest
 
 final class BalancePlusUITests: XCTestCase {

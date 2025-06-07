@@ -1,10 +1,3 @@
-//
-//  BalancePlusTests.swift
-//  BalancePlusTests
-//
-//  Created by Самохина Марина Германовна on 06.06.2025.
-//
-
 import XCTest
 @testable import BalancePlus
 
