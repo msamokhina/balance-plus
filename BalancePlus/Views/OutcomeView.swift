@@ -2,7 +2,7 @@ import SwiftUI
 
 struct OutcomeView: View {
     var body: some View {
-        Text("Hello, Outcome!")
+        TransactionsListView(direction: .outcome)
     }
 }
 
