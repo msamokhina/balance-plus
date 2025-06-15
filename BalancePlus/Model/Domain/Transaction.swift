@@ -2,9 +2,6 @@ import Foundation
 
 // MARK: csv
 extension Transaction {
-    /// Инициализатор для создания транзакции из одной строки CSV
-    /// Ожидаемый формат строки: "id,accountId,categoryId,amount,transactionDate,comment,createdAt,updatedAt"
-    /// - Parameter csvRow: Одна строка из CSV-файла
     init?(csvRow: String) {
         let columns = csvRow.components(separatedBy: ",")
         
@@ -50,10 +47,7 @@ extension Transaction {
             updatedAt: updatedAt
         )
     }
-    
-    /// Парсит строку с несколькими CSV-записями и возвращает массив транзакций
-    /// - Parameter csv: Строка, содержащая данные в формате CSV (с заголовками или без)
-    /// - Returns: Массив `[Transaction]`
+
     static func parse(csv: String) -> [Transaction] {
         let rows = csv.components(separatedBy: .newlines)
         
@@ -66,7 +60,6 @@ extension Transaction {
 
 // MARK: json
 extension Transaction {
-    /// Преобразование объекта Transaction в словарь `[String: Any]`
     var jsonObject: Any {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601withFractionalSeconds
@@ -81,8 +74,7 @@ extension Transaction {
         }
         return [:]
     }
-    
-    /// Cоздание объекта Transaction из словаря `[String: Any]`
+
     static func parse(jsonObject: Any) -> Transaction? {
         guard let jsonDict = jsonObject as? [String: Any] else {
             print("Ошибка: jsonObject не является словарем [String: Any]")

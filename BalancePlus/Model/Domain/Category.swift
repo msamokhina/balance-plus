@@ -18,38 +18,6 @@ enum Direction {
     }
 }
 
-extension Category {
-    /// Преобразование объекта Category в словарь `[String: Any]`
-    var jsonObject: [String: Any] {
-        return [
-            "id": id,
-            "name": name,
-            "emoji": String(emoji),
-            "isIncome": direction.isIncome
-        ]
-    }
-    
-    /// Cоздание объекта Category из словаря `[String: Any]`
-    static func parse(jsonObject: Any) -> Category? {
-        guard let dictionary = jsonObject as? [String: Any],
-              let id = dictionary["id"] as? Int,
-              let name = dictionary["name"] as? String,
-              let emojiString = dictionary["emoji"] as? String,
-              let emoji = emojiString.first,
-              let isIncome = dictionary["isIncome"] as? Bool
-        else {
-            return nil
-        }
-        
-        return Category(
-            id: id,
-            name: name,
-            emoji: emoji,
-            direction: Direction(isIncome)
-        )
-    }
-}
-
 struct Category: Codable, Identifiable {
     let id: Int
     let name: String
