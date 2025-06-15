@@ -6,54 +6,6 @@ enum Currency: String, Codable {
     case eur = "EUR"
 }
 
-extension BankAccount {
-    /// Преобразование объекта BankAccount в словарь `[String: Any]`
-    var jsonObject: [String: Any] {
-        let formatter = ISO8601DateFormatter.withFractionalSeconds
-        
-        return [
-            "id": id,
-            "userId": userId,
-            "name": name,
-            "balance": String(describing: balance),
-            "currency": currency.rawValue,
-            "createdAt": formatter.string(from: createdAt),
-            "updatedAt": formatter.string(from: updatedAt),
-        ]
-    }
-    
-    /// Cоздание объекта BankAccount из словаря `[String: Any]`
-    static func parse(jsonObject: Any) -> BankAccount? {
-        let formatter = ISO8601DateFormatter.withFractionalSeconds
-        
-        guard let dictionary = jsonObject as? [String: Any],
-              let id = dictionary["id"] as? Int,
-              let userId = dictionary["userId"] as? Int,
-              let name = dictionary["name"] as? String,
-              let balanceString = dictionary["balance"] as? String,
-              let balance = Decimal(string: balanceString),
-              let currencyString = dictionary["currency"] as? String,
-              let currency = Currency(rawValue: currencyString),
-              let createdAtString = dictionary["createdAt"] as? String,
-              let createdAt = formatter.date(from: createdAtString),
-              let updatedAtString = dictionary["updatedAt"] as? String,
-              let updatedAt = formatter.date(from: updatedAtString)
-        else {
-            return nil
-        }
-        
-        return BankAccount(
-            id: id,
-            userId: userId,
-            name: name,
-            balance: balance,
-            currency: currency,
-            createdAt: createdAt,
-            updatedAt: updatedAt
-        )
-    }
-}
-
 struct BankAccount: Codable, Identifiable {
     // TODO: проверить по макетам, какие поля мы можем изменять
     let id: Int

@@ -1,35 +1,12 @@
 import Foundation
 
-/// Протокол, определяющий интерфейс для работы с финансовыми транзакциями
 protocol TransactionsServiceProtocol {
-    /// Получает список транзакций за указанный период
-    /// - Parameters:
-    ///   - startDate: Начальная дата периода (включительно)
-    ///   - endDate: Конечная дата периода (включительно)
-    /// - Returns: Массив объектов `Transaction`, соответствующих заданному периоду
-    /// - Throws: Ошибки, связанные с получением данных
     func fetchTransactions(from startDate: Date, to endDate: Date) async throws -> [Transaction]
-
-    /// Создаёт новую транзакцию
-    /// - Parameter transaction: Объект `Transaction` для создания
-    /// - Returns: Созданный объект `Transaction` с присвоенным уникальным ID и временными метками
-    /// - Throws: Ошибки, связанные с операцией создания
     func createTransaction(_ transaction: Transaction) async throws -> Transaction
-
-    /// Редактирует существующую транзакцию
-    /// - Parameter transaction: Объект `Transaction` с обновленными данными
-    /// - Returns: Обновленный объект `Transaction`
-    /// - Throws: Ошибки, если транзакция не найдена или другие проблемы
     func updateTransaction(_ transaction: Transaction) async throws -> Transaction
-
-    /// Удаляет транзакцию по её идентификатору
-    /// - Parameter transactionID: Идентификатор транзакции, которую нужно удалить
-    /// - Throws: Ошибки, если транзакция не найдена или другие проблемы
     func deleteTransaction(withID transactionID: Int) async throws
 }
 
-/// Мок сервиса транзакций
-/// Имитирует CRUD-операции (создание, чтение, обновление, удаление) над транзакциями
 final class MockTransactionsService: TransactionsServiceProtocol {
     @Published private var mockTransactions: [Transaction] = []
     private var nextID: Int = 0 // Для генерации уникальных ID для новых транзакций
@@ -85,8 +62,6 @@ final class MockTransactionsService: TransactionsServiceProtocol {
         nextID += mockTransactions.count
     }
 
-
-    /// Имитирует получение транзакций за указанный период
     func fetchTransactions(from startDate: Date, to endDate: Date) async throws -> [Transaction] {
         // Имитация сетевой задержки
         try await Task.sleep(nanoseconds: 500_000_000) // 0.5 секунды
@@ -96,7 +71,6 @@ final class MockTransactionsService: TransactionsServiceProtocol {
         }
     }
 
-    /// Имитирует создание новой транзакции
     func createTransaction(_ transaction: Transaction) async throws -> Transaction {
         // Имитация сетевой задержки
         try await Task.sleep(nanoseconds: 500_000_000) // 0.5 секунды
@@ -118,7 +92,6 @@ final class MockTransactionsService: TransactionsServiceProtocol {
         return newTransaction
     }
 
-    /// Имитирует обновление существующей транзакции
     func updateTransaction(_ transaction: Transaction) async throws -> Transaction {
         // Имитация сетевой задержки
         try await Task.sleep(nanoseconds: 500_000_000) // 0.5 секунды
@@ -136,7 +109,6 @@ final class MockTransactionsService: TransactionsServiceProtocol {
         return updatedTransaction
     }
 
-    /// Имитирует удаление транзакции по ID
     func deleteTransaction(withID transactionID: Int) async throws {
         // Имитация сетевой задержки
         try await Task.sleep(nanoseconds: 500_000_000) // 0.5 секунды
