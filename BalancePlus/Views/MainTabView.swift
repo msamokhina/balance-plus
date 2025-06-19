@@ -4,19 +4,19 @@ struct MainTabView: View {
     var body: some View {
         TabView {
             Tab("Расходы", image: "outcome") {
-                OutcomeView().background(Color("BackgroundColor"))
+                OutcomeView()
             }
             Tab("Доходы", image: "income") {
-                IncomeView().background(Color("BackgroundColor"))
+                IncomeView()
             }
             Tab("Счет", image: "account") {
-                AccountView().background(Color("BackgroundColor"))
+                AccountView()
             }
             Tab("Статьи", image: "categories") {
-                CategoriesView().background(Color("BackgroundColor"))
+                CategoriesView()
             }
             Tab("Настройки", image: "settings") {
-                SettingsView().background(Color("BackgroundColor"))
+                SettingsView()
             }
         }
     }

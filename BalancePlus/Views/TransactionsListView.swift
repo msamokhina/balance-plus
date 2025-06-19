@@ -7,48 +7,63 @@ struct TransactionsListView: View {
     }
     
     var body: some View {
-        VStack {
-            HStack {
-                Text("\(viewModel.direction == .income ? "Доходы" : "Расходы") сегодня")
-                    .font(.largeTitle)
-                    .bold()
-                Spacer()
-            }
-            SumView(viewModel: viewModel)
-
-            if viewModel.isLoading {
-                ProgressView("Загрузка транзакций...")
-            }
-            else if viewModel.transactions.count > 0 {
-                HStack {
-                    Text("ОПЕРАЦИИ")
-                        .font(.subheadline)
-                        .foregroundColor(Color.secondary)
-                    Spacer()
-                }
-                .padding(.top, 10)
-                
-                NavigationSplitView {
-                    List(viewModel.transactions) { transaction in
-                        NavigationLink {
-                            Text(transaction.amountStr)
-                        } label: {
-                            TransactionRow(transaction: transaction)
+        NavigationStack {
+            VStack {
+                VStack {
+                    HStack {
+                        Text("\(viewModel.direction == .income ? "Доходы" : "Расходы") сегодня")
+                            .font(.largeTitle)
+                            .bold()
+                        Spacer()
+                    }
+                                    
+                    SumView(viewModel: viewModel)
+                    
+                    HStack {
+                        Text("ОПЕРАЦИИ")
+                            .font(.subheadline)
+                            .foregroundColor(Color.secondary)
+                        Spacer()
+                    }
+                    .padding(.top, 10)
+                    
+                    VStack{
+                        if viewModel.isLoading {
+                            ProgressView("Загрузка транзакций...")
+                                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                        }
+                        else if viewModel.transactions.count > 0 {
+                                List(viewModel.transactions) { transaction in
+                                    NavigationLink {
+                                        Text(transaction.amountStr)
+                                    } label: {
+                                        TransactionRow(transaction: transaction)
+                                    }
+                                }
+                                .listStyle(.plain)
                         }
                     }
-                } detail: {
-                    Text("Select a transaction")
-                }
-                .cornerRadius(10)
-                .listStyle(.plain)
+                    .background(Color.white)
+                    .cornerRadius(10)
+                }.padding()
+
+                Spacer()
             }
-            
-            Spacer()
+            .background(Color("BackgroundColor"))
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    NavigationLink {
+                        HistoryView()
+                    } label: {
+                        Image(systemName: "clock")
+                    }
+                }
+            }
+            .onAppear {
+                viewModel.loadTransactions()
+            }
         }
-        .padding()
-        .onAppear {
-            viewModel.loadTransactions()
-        }
+        .tint(Color("NavigationColor"))
     }
 }
 
@@ -61,7 +76,7 @@ struct SumView: View {
             Text(viewModel.sum)
         }
         .padding()
-        .background()
+        .background(Color.white)
         .cornerRadius(10)
     }
 }
@@ -93,5 +108,5 @@ struct TransactionRow: View {
 }
 
 #Preview {
-    TransactionsListView(direction:.income).background(Color("BackgroundColor"))
+    TransactionsListView(direction:.income)
 }
