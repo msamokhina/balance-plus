@@ -8,7 +8,7 @@ protocol TransactionsServiceProtocol {
 }
 
 final class MockTransactionsService: TransactionsServiceProtocol {
-    @Published private var mockTransactions: [Transaction] = []
+    private var mockTransactions: [Transaction] = []
     private var nextID: Int = 0 // Для генерации уникальных ID для новых транзакций
 
     private let mockAccount = BankAccount(
@@ -40,15 +40,15 @@ final class MockTransactionsService: TransactionsServiceProtocol {
         mockTransactions = [
             Transaction(
                 id: nextID, account: mockAccount, category: mockSalaryCategory, amount: 50000.00,
-                transactionDate: tenDaysAgo, comment: "Зарплата за май", createdAt: tenDaysAgo, updatedAt: tenDaysAgo
+                transactionDate: now, comment: nil, createdAt: tenDaysAgo, updatedAt: tenDaysAgo
             ),
             Transaction(
                 id: nextID + 1, account: mockAccount, category: mockFoodCategory, amount: 750.50,
-                transactionDate: threeDaysAgo, comment: "Продукты из супермаркета", createdAt: threeDaysAgo, updatedAt: threeDaysAgo
+                transactionDate: now, comment: "Продукты из супермаркета", createdAt: threeDaysAgo, updatedAt: threeDaysAgo
             ),
             Transaction(
                 id: nextID + 2, account: mockAccount, category: mockTransportCategory, amount: 90.00,
-                transactionDate: twoDaysAgo, comment: "Поездка на метро", createdAt: twoDaysAgo, updatedAt: twoDaysAgo
+                transactionDate: now, comment: "Поездка на метро", createdAt: twoDaysAgo, updatedAt: twoDaysAgo
             ),
             Transaction(
                 id: nextID + 3, account: mockAccount, category: mockFoodCategory, amount: 950.00,

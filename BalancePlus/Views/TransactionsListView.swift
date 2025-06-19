@@ -1,44 +1,97 @@
 import SwiftUI
 
 struct TransactionsListView: View {
-    let direction: Direction
+    @State private var viewModel: TransactionsViewModel
+    init(direction: Direction) {
+        _viewModel = State(initialValue: TransactionsViewModel(direction: direction))
+    }
     
     var body: some View {
         VStack {
             HStack {
-                Text("\(direction == .income ? "Доходы" : "Расходы") сегодня")
+                Text("\(viewModel.direction == .income ? "Доходы" : "Расходы") сегодня")
                     .font(.largeTitle)
                     .bold()
                 Spacer()
             }
-            HStack {
-                Text("Всего")
-                Spacer()
-                Text("436 558 ₽")
+            SumView(viewModel: viewModel)
+
+            if viewModel.isLoading {
+                ProgressView("Загрузка транзакций...")
             }
-            .padding()
-            .background()
-            .cornerRadius(10)
-            
-            // TODO: добавить условие по наличию операций
-            HStack {
-                Text("ОПЕРАЦИИ")
-                    .font(.subheadline)
-                    .foregroundColor(Color.secondary)
-                Spacer()
+            else if viewModel.transactions.count > 0 {
+                HStack {
+                    Text("ОПЕРАЦИИ")
+                        .font(.subheadline)
+                        .foregroundColor(Color.secondary)
+                    Spacer()
+                }
+                .padding(.top, 10)
+                
+                NavigationSplitView {
+                    List(viewModel.transactions) { transaction in
+                        NavigationLink {
+                            Text(transaction.amountStr)
+                        } label: {
+                            TransactionRow(transaction: transaction)
+                        }
+                    }
+                } detail: {
+                    Text("Select a transaction")
+                }
+                .cornerRadius(10)
+                .listStyle(.plain)
             }
-            .padding(EdgeInsets(top: 10, leading: 0, bottom: 0, trailing: 0))
             
             Spacer()
-            List() {
-            }
-            .cornerRadius(10)
         }
         .padding()
+        .onAppear {
+            viewModel.loadTransactions()
+        }
+    }
+}
+
+struct SumView: View {
+    @Bindable var viewModel: TransactionsViewModel
+    var body: some View {
+        HStack {
+            Text("Всего")
+            Spacer()
+            Text(viewModel.sum)
+        }
+        .padding()
+        .background()
+        .cornerRadius(10)
+    }
+}
+
+struct TransactionRow: View {
+    var transaction: TransactionViewModel
+
+    var body: some View {
+        HStack {
+            Text(String(transaction.categoryEmoji))
+                .font(.system(size: 15))
+                .frame(width: 25, height: 25)
+                .background(Color("AccentColor").opacity(0.2))
+                .cornerRadius(.infinity)
+
+            VStack(alignment: .leading) {
+                Text(transaction.categoryName)
+                if let comment = transaction.comment, !comment.isEmpty {
+                    Text(comment)
+                        .font(.subheadline)
+                        .foregroundColor(.gray)
+                }
+            }
+            Spacer()
+            
+            Text(transaction.amountStr)
+        }
     }
 }
 
 #Preview {
-    TransactionsListView(direction: .income)
-        .background(Color("BackgroundColor"))
+    TransactionsListView(direction:.income).background(Color("BackgroundColor"))
 }
