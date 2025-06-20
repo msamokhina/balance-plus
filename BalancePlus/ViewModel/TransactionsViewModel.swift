@@ -32,11 +32,17 @@ final class TransactionsViewModel {
     }
     let direction: Direction
     
-    var selectedStartDate: Date = Date().startOfDay()
-    var selectedEndDate: Date = Date().endOfDay()
+    var selectedStartDate: Date
+    var selectedEndDate: Date
     
-    init(direction: Direction, provider: TransactionsServiceProtocol = MockTransactionsService()) {
+    init(direction: Direction,
+         selectedStartDate: Date = Date().startOfDay(),
+         selectedEndDate: Date = Date().endOfDay(),
+         provider: TransactionsServiceProtocol = MockTransactionsService()
+    ) {
         self.direction = direction
+        self.selectedStartDate = selectedStartDate
+        self.selectedEndDate = selectedEndDate
         self.provider = provider
     }
     

@@ -35,6 +35,8 @@ final class MockTransactionsService: TransactionsServiceProtocol {
         let twoDaysAgo = now.addingTimeInterval(-2 * 24 * 60 * 60)
         let threeDaysAgo = now.addingTimeInterval(-3 * 24 * 60 * 60)
         let tenDaysAgo = now.addingTimeInterval(-10 * 24 * 60 * 60)
+        let twentyDaysAgo = now.addingTimeInterval(-20 * 24 * 60 * 60)
+        let fourtyDaysAgo = now.addingTimeInterval(-40 * 24 * 60 * 60)
 
 
         mockTransactions = [
@@ -57,6 +59,14 @@ final class MockTransactionsService: TransactionsServiceProtocol {
             Transaction(
                 id: nextID + 4, account: mockAccount, category: mockSalaryCategory, amount: 5000.00,
                 transactionDate: now, comment: "Премия", createdAt: now, updatedAt: now
+            ),
+            Transaction(
+                id: nextID + 5, account: mockAccount, category: mockSalaryCategory, amount: 50000.00,
+                transactionDate: fourtyDaysAgo, comment: "Зарплата за май", createdAt: now, updatedAt: now
+            ),
+            Transaction(
+                id: nextID + 6, account: mockAccount, category: mockSalaryCategory, amount: 50000.00,
+                transactionDate: twentyDaysAgo, comment: "Аванс за июнь", createdAt: now, updatedAt: now
             )
         ]
         nextID += mockTransactions.count

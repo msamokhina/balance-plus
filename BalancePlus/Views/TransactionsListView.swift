@@ -45,7 +45,8 @@ struct TransactionsListView: View {
                     }
                     .background(Color.white)
                     .cornerRadius(10)
-                }.padding()
+                }
+                .padding()
 
                 Spacer()
             }
@@ -53,7 +54,7 @@ struct TransactionsListView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     NavigationLink {
-                        HistoryView()
+                        HistoryView(direction: viewModel.direction)
                     } label: {
                         Image(systemName: "clock")
                     }

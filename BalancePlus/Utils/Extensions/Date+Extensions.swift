@@ -8,4 +8,14 @@ extension Date {
     func startOfDay() -> Date {
         Calendar.current.startOfDay(for: self)
     }
+    
+    func startOfDayMonthAgo() -> Date {
+        let calendar = Calendar.current
+        var dateComponents = DateComponents()
+        
+        dateComponents.month = -1
+        let dayMonthAgo = calendar.date(byAdding: dateComponents, to: self) ?? self
+
+        return Calendar.current.startOfDay(for: dayMonthAgo)
+    }
 }
