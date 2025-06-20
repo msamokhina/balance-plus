@@ -38,6 +38,10 @@ struct HistoryView: View {
                                 .presentationCompactAdaptation(.popover)
                                 .onChange(of: viewModel.selectedStartDate) {
                                     viewModel.selectedStartDate = viewModel.selectedStartDate.startOfDay()
+                                    
+                                    if viewModel.selectedStartDate > viewModel.selectedEndDate {
+                                        viewModel.selectedEndDate = viewModel.selectedStartDate.endOfDay()
+                                    }
                                 }
                             }
                     }
@@ -62,6 +66,10 @@ struct HistoryView: View {
                                 .presentationCompactAdaptation(.popover)
                                 .onChange(of: viewModel.selectedEndDate) {
                                     viewModel.selectedEndDate = viewModel.selectedEndDate.endOfDay()
+                                    
+                                    if viewModel.selectedEndDate < viewModel.selectedStartDate {
+                                        viewModel.selectedStartDate = viewModel.selectedEndDate.startOfDay()
+                                    }
                                 }
                             }
                     }
