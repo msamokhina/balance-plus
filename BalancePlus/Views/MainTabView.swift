@@ -4,10 +4,10 @@ struct MainTabView: View {
     var body: some View {
         TabView {
             Tab("Расходы", image: "outcome") {
-                OutcomeView()
+                TransactionsListView(direction: .outcome)
             }
             Tab("Доходы", image: "income") {
-                IncomeView()
+                TransactionsListView(direction: .income)
             }
             Tab("Счет", image: "account") {
                 AccountView()
