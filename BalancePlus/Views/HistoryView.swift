@@ -96,15 +96,26 @@ struct HistoryView: View {
                 
                 // TODO: убрать дублирование
                 VStack{
+                    HStack {
+                        Spacer()
+                        Menu(viewModel.sort == .byDate ? "По дате" : "По сумме") {
+                            Button("По дате", action: {
+                                viewModel.sortTransactions(sortBy: .byDate)
+                            })
+                            Button("По сумме", action: {
+                                viewModel.sortTransactions(sortBy: .byAmount)
+                            })
+                        }
+                        .padding()
+                    }
+                    
                     if viewModel.isLoading {
                         ProgressView("Загрузка транзакций...")
                             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-                    }
-                    else if  viewModel.transactions.count == 0 {
+                    } else if  viewModel.transactions.count == 0 {
                         Text("Операций за данный период нет")
                             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-                    }
-                    else if viewModel.transactions.count > 0 {
+                    } else if viewModel.transactions.count > 0 {
                             List(viewModel.transactions) { transaction in
                                 NavigationLink {
                                     Text(transaction.amountStr)

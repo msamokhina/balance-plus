@@ -31,8 +31,10 @@ struct TransactionsListView: View {
                         if viewModel.isLoading {
                             ProgressView("Загрузка транзакций...")
                                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-                        }
-                        else if viewModel.transactions.count > 0 {
+                        } else if  viewModel.transactions.count == 0 {
+                            Text("Операций за данный период нет")
+                                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                        } else if viewModel.transactions.count > 0 {
                                 List(viewModel.transactions) { transaction in
                                     NavigationLink {
                                         Text(transaction.amountStr)

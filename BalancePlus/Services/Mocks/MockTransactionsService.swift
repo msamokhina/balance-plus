@@ -41,7 +41,7 @@ final class MockTransactionsService: TransactionsServiceProtocol {
 
         mockTransactions = [
             Transaction(
-                id: nextID, account: mockAccount, category: mockSalaryCategory, amount: 50000.00,
+                id: nextID, account: mockAccount, category: mockSalaryCategory, amount: 52000.00,
                 transactionDate: now, comment: nil, createdAt: tenDaysAgo, updatedAt: tenDaysAgo
             ),
             Transaction(
@@ -65,7 +65,7 @@ final class MockTransactionsService: TransactionsServiceProtocol {
                 transactionDate: fourtyDaysAgo, comment: "Зарплата за май", createdAt: now, updatedAt: now
             ),
             Transaction(
-                id: nextID + 6, account: mockAccount, category: mockSalaryCategory, amount: 50000.00,
+                id: nextID + 6, account: mockAccount, category: mockSalaryCategory, amount: 51000.00,
                 transactionDate: twentyDaysAgo, comment: "Аванс за июнь", createdAt: now, updatedAt: now
             )
         ]
@@ -78,7 +78,7 @@ final class MockTransactionsService: TransactionsServiceProtocol {
 
         return mockTransactions.filter { transaction in
             transaction.transactionDate >= startDate && transaction.transactionDate <= endDate
-        }
+        }.sorted { $0.transactionDate < $1.transactionDate }
     }
 
     func createTransaction(_ transaction: Transaction) async throws -> Transaction {
