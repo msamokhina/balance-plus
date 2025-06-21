@@ -8,7 +8,7 @@ protocol TransactionsServiceProtocol {
 }
 
 final class MockTransactionsService: TransactionsServiceProtocol {
-    @Published private var mockTransactions: [Transaction] = []
+    private var mockTransactions: [Transaction] = []
     private var nextID: Int = 0 // Для генерации уникальных ID для новых транзакций
 
     private let mockAccount = BankAccount(
@@ -35,20 +35,22 @@ final class MockTransactionsService: TransactionsServiceProtocol {
         let twoDaysAgo = now.addingTimeInterval(-2 * 24 * 60 * 60)
         let threeDaysAgo = now.addingTimeInterval(-3 * 24 * 60 * 60)
         let tenDaysAgo = now.addingTimeInterval(-10 * 24 * 60 * 60)
+        let twentyDaysAgo = now.addingTimeInterval(-20 * 24 * 60 * 60)
+        let fourtyDaysAgo = now.addingTimeInterval(-40 * 24 * 60 * 60)
 
 
         mockTransactions = [
             Transaction(
-                id: nextID, account: mockAccount, category: mockSalaryCategory, amount: 50000.00,
-                transactionDate: tenDaysAgo, comment: "Зарплата за май", createdAt: tenDaysAgo, updatedAt: tenDaysAgo
+                id: nextID, account: mockAccount, category: mockSalaryCategory, amount: 52000.00,
+                transactionDate: now, comment: nil, createdAt: tenDaysAgo, updatedAt: tenDaysAgo
             ),
             Transaction(
                 id: nextID + 1, account: mockAccount, category: mockFoodCategory, amount: 750.50,
-                transactionDate: threeDaysAgo, comment: "Продукты из супермаркета", createdAt: threeDaysAgo, updatedAt: threeDaysAgo
+                transactionDate: now, comment: "Продукты из супермаркета", createdAt: threeDaysAgo, updatedAt: threeDaysAgo
             ),
             Transaction(
                 id: nextID + 2, account: mockAccount, category: mockTransportCategory, amount: 90.00,
-                transactionDate: twoDaysAgo, comment: "Поездка на метро", createdAt: twoDaysAgo, updatedAt: twoDaysAgo
+                transactionDate: now, comment: "Поездка на метро", createdAt: twoDaysAgo, updatedAt: twoDaysAgo
             ),
             Transaction(
                 id: nextID + 3, account: mockAccount, category: mockFoodCategory, amount: 950.00,
@@ -57,6 +59,14 @@ final class MockTransactionsService: TransactionsServiceProtocol {
             Transaction(
                 id: nextID + 4, account: mockAccount, category: mockSalaryCategory, amount: 5000.00,
                 transactionDate: now, comment: "Премия", createdAt: now, updatedAt: now
+            ),
+            Transaction(
+                id: nextID + 5, account: mockAccount, category: mockSalaryCategory, amount: 50000.00,
+                transactionDate: fourtyDaysAgo, comment: "Зарплата за май", createdAt: now, updatedAt: now
+            ),
+            Transaction(
+                id: nextID + 6, account: mockAccount, category: mockSalaryCategory, amount: 51000.00,
+                transactionDate: twentyDaysAgo, comment: "Аванс за июнь", createdAt: now, updatedAt: now
             )
         ]
         nextID += mockTransactions.count
@@ -68,7 +78,7 @@ final class MockTransactionsService: TransactionsServiceProtocol {
 
         return mockTransactions.filter { transaction in
             transaction.transactionDate >= startDate && transaction.transactionDate <= endDate
-        }
+        }.sorted { $0.transactionDate < $1.transactionDate }
     }
 
     func createTransaction(_ transaction: Transaction) async throws -> Transaction {
