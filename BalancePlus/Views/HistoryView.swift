@@ -5,9 +5,7 @@ struct HistoryView: View {
     init(direction: Direction) {
         _viewModel = State(initialValue: TransactionsViewModel(direction: direction, selectedStartDate: Date().startOfDayMonthAgo(), selectedEndDate: Date().endOfDay()))
     }
-    
-    @State private var showingStartDatePickerPopover: Bool = false
-    @State private var showingEndDatePickerPopover: Bool = false
+
     var body: some View {
         VStack{
             VStack {
@@ -18,32 +16,24 @@ struct HistoryView: View {
                     Spacer()
                 }
                 
-                
                 VStack {
                     HStack {
                         Text("Начало")
                         Spacer()
                         DateLabel(date: $viewModel.selectedStartDate)
-                            .onTapGesture {showingStartDatePickerPopover = true}
-                            .popover(isPresented: $showingStartDatePickerPopover, attachmentAnchor: .point(.bottomLeading)) {
+                            .overlay {
                                 DatePicker(
-                                    "Выберите дату",
                                     selection: $viewModel.selectedStartDate,
                                     displayedComponents: .date
-                                )
-                                .tint(Color("AccentColor"))
-                                .datePickerStyle(.graphical)
-                                .background(Color.white)
-                                .cornerRadius(10)
-                                .frame(width: 320, height: 350)
-                                .presentationCompactAdaptation(.popover)
-                                .onChange(of: viewModel.selectedStartDate) {
-                                    viewModel.selectedStartDate = viewModel.selectedStartDate.startOfDay()
-                                    
-                                    if viewModel.selectedStartDate > viewModel.selectedEndDate {
-                                        viewModel.selectedEndDate = viewModel.selectedStartDate.endOfDay()
+                                ){}.colorMultiply(.clear)
+                                    .tint(Color("AccentColor"))
+                                    .onChange(of: viewModel.selectedStartDate) {
+                                        viewModel.selectedStartDate = viewModel.selectedStartDate.startOfDay()
+                                        
+                                        if viewModel.selectedStartDate > viewModel.selectedEndDate {
+                                            viewModel.selectedEndDate = viewModel.selectedStartDate.endOfDay()
+                                        }
                                     }
-                                }
                             }
                     }
                     .padding(.bottom, 4)
@@ -53,26 +43,19 @@ struct HistoryView: View {
                         Text("Конец")
                         Spacer()
                         DateLabel(date: $viewModel.selectedEndDate)
-                            .onTapGesture {showingEndDatePickerPopover = true}
-                            .popover(isPresented: $showingEndDatePickerPopover, attachmentAnchor: .point(.bottomLeading)) {
+                            .overlay {
                                 DatePicker(
-                                    "Выберите дату",
                                     selection: $viewModel.selectedEndDate,
                                     displayedComponents: .date
-                                )
-                                .tint(Color("AccentColor"))
-                                .datePickerStyle(.graphical)
-                                .background(Color.white)
-                                .cornerRadius(10)
-                                .frame(width: 320, height: 350)
-                                .presentationCompactAdaptation(.popover)
-                                .onChange(of: viewModel.selectedEndDate) {
-                                    viewModel.selectedEndDate = viewModel.selectedEndDate.endOfDay()
-                                    
-                                    if viewModel.selectedEndDate < viewModel.selectedStartDate {
-                                        viewModel.selectedStartDate = viewModel.selectedEndDate.startOfDay()
+                                ){}.colorMultiply(.clear)
+                                    .tint(Color("AccentColor"))
+                                    .onChange(of: viewModel.selectedEndDate) {
+                                        viewModel.selectedEndDate = viewModel.selectedEndDate.endOfDay()
+                                        
+                                        if viewModel.selectedEndDate < viewModel.selectedStartDate {
+                                            viewModel.selectedStartDate = viewModel.selectedEndDate.startOfDay()
+                                        }
                                     }
-                                }
                             }
                     }
                     .padding(.vertical, 4)
