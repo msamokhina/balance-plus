@@ -14,7 +14,7 @@ extension Date {
         var dateComponents = DateComponents()
         
         dateComponents.month = -1
-        let dayMonthAgo = calendar.date(byAdding: dateComponents, to: self) ?? self
+        let dayMonthAgo = calendar.date(byAdding: dateComponents, to: self)!
 
         return Calendar.current.startOfDay(for: dayMonthAgo)
     }
