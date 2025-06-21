@@ -17,7 +17,7 @@ struct TransactionsListView: View {
                         Spacer()
                     }
                                     
-                    SumView(viewModel: viewModel)
+                    SumView(sum: viewModel.sum)
                     
                     HStack {
                         Text("ОПЕРАЦИИ")
@@ -71,12 +71,13 @@ struct TransactionsListView: View {
 }
 
 struct SumView: View {
-    @Bindable var viewModel: TransactionsViewModel
+    var sum: String
+    
     var body: some View {
         HStack {
             Text("Всего")
             Spacer()
-            Text(viewModel.sum)
+            Text(sum)
         }
         .padding()
         .background(Color.white)

@@ -4,15 +4,15 @@ struct TransactionViewModel: Identifiable {
     let id: Int
     let amount: Decimal
     let amountStr: String
-    let transactionDate: Date
-    let date: String
+    let date: Date
+    let dateStr: String
     let comment: String?
     let categoryEmoji: Character
     let categoryName: String
     let direction: Direction
 }
 
-enum TransactionsSort {
+enum SortBy {
     case byDate
     case byAmount
 }
@@ -22,7 +22,7 @@ final class TransactionsViewModel {
     var transactions: [TransactionViewModel] = []
     var isLoading: Bool = false
     var errorMessage: String?
-    private(set) var sort: TransactionsSort = .byDate
+    private(set) var sort: SortBy = .byDate
     
     private let provider: TransactionsServiceProtocol
     private let convert: (Transaction) -> TransactionViewModel = {
@@ -30,8 +30,8 @@ final class TransactionsViewModel {
             id: transaction.id,
             amount: transaction.amount,
             amountStr: "\(Int(truncating: NSDecimalNumber(decimal: transaction.amount)).formattedWithGroupSeparator()) ₽",
-            transactionDate: transaction.transactionDate,
-            date: "\(transaction.transactionDate)",
+            date: transaction.transactionDate,
+            dateStr: "\(transaction.transactionDate)",
             comment: transaction.comment,
             categoryEmoji: transaction.category.emoji,
             categoryName: transaction.category.name,
@@ -59,10 +59,10 @@ final class TransactionsViewModel {
         return "\(sum.formattedWithGroupSeparator()) ₽"
     }
     
-    func sortTransactions(sortBy: TransactionsSort = .byDate) {
+    func sortTransactions(sortBy: SortBy = .byDate) {
         if sortBy == .byDate {
             // По дате сортируем по убыванию, сверху всегда более свежие оперции
-            transactions = transactions.sorted { $0.transactionDate < $1.transactionDate }
+            transactions = transactions.sorted { $0.date < $1.date }
             sort = .byDate
         } else {
             // По цене сортируем по возрастанию, предполагаю, что пользователю в первую очередь интересны крупные расходы

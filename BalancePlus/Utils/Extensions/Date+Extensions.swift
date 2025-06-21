@@ -18,4 +18,20 @@ extension Date {
 
         return Calendar.current.startOfDay(for: dayMonthAgo)
     }
+    
+    func formattedDayMonthYear() -> String {
+        let calendar = Calendar.current
+        let currentYear = calendar.component(.year, from: Date())
+        let dateYear = calendar.component(.year, from: self)
+
+        let formatter = DateFormatter()
+
+        if dateYear != currentYear {
+            formatter.dateFormat = "d MMMM yyyy"
+        } else {
+            formatter.dateFormat = "d MMMM"
+        }
+
+        return formatter.string(from: self)
+    }
 }

@@ -20,7 +20,7 @@ struct HistoryView: View {
                     HStack {
                         Text("Начало")
                         Spacer()
-                        DateLabel(date: $viewModel.selectedStartDate)
+                        DateLabel(date: viewModel.selectedStartDate)
                             .overlay {
                                 DatePicker(
                                     selection: $viewModel.selectedStartDate,
@@ -36,13 +36,12 @@ struct HistoryView: View {
                                     }
                             }
                     }
-                    .padding(.bottom, 4)
                     
-                    Divider().padding(.leading, 16)
+                    Divider().padding(.leading, 8)
                     HStack {
                         Text("Конец")
                         Spacer()
-                        DateLabel(date: $viewModel.selectedEndDate)
+                        DateLabel(date: viewModel.selectedEndDate)
                             .overlay {
                                 DatePicker(
                                     selection: $viewModel.selectedEndDate,
@@ -58,8 +57,23 @@ struct HistoryView: View {
                                     }
                             }
                     }
-                    .padding(.vertical, 4)
-                    Divider().padding(.leading, 16)
+                    
+                    Divider().padding(.leading, 8)
+                    HStack {
+                        Text("Сортировка")
+                        Spacer()
+                        Menu(viewModel.sort == .byDate ? "По дате" : "По сумме") {
+                            Button("По дате", action: {
+                                viewModel.sortTransactions(sortBy: .byDate)
+                            })
+                            Button("По сумме", action: {
+                                viewModel.sortTransactions(sortBy: .byAmount)
+                            })
+                        }
+                    }
+                    .padding(.top, 4)
+                    
+                    Divider().padding(.leading, 8)
                     HStack {
                         Text("Всего")
                         Spacer()
@@ -78,22 +92,8 @@ struct HistoryView: View {
                     Spacer()
                 }
                 .padding(.top, 10)
-                
-                // TODO: убрать дублирование
+
                 VStack{
-                    HStack {
-                        Spacer()
-                        Menu(viewModel.sort == .byDate ? "По дате" : "По сумме") {
-                            Button("По дате", action: {
-                                viewModel.sortTransactions(sortBy: .byDate)
-                            })
-                            Button("По сумме", action: {
-                                viewModel.sortTransactions(sortBy: .byAmount)
-                            })
-                        }
-                        .padding()
-                    }
-                    
                     if viewModel.isLoading {
                         ProgressView("Загрузка транзакций...")
                             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
@@ -138,18 +138,9 @@ struct HistoryView: View {
 }
 
 struct DateLabel: View {
-    // TODO: перенести во ViewModel
-    // TODO: нужно выводить год если не текущий
-    private var dateFormatter: DateFormatter {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "d MMMM"
-        return formatter
-    }
-    
-    @Binding
     var date: Date
     var body: some View {
-        Text(date, formatter: dateFormatter)
+        Text(date.formattedDayMonthYear())
             .padding(.horizontal, 10)
             .padding(.vertical, 5)
             .background(Color("AccentColor").opacity(0.2))
