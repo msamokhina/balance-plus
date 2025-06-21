@@ -31,6 +31,7 @@ struct HistoryView: View {
                                     selection: $viewModel.selectedStartDate,
                                     displayedComponents: .date
                                 )
+                                .tint(Color("AccentColor"))
                                 .datePickerStyle(.graphical)
                                 .background(Color.white)
                                 .cornerRadius(10)
@@ -59,6 +60,7 @@ struct HistoryView: View {
                                     selection: $viewModel.selectedEndDate,
                                     displayedComponents: .date
                                 )
+                                .tint(Color("AccentColor"))
                                 .datePickerStyle(.graphical)
                                 .background(Color.white)
                                 .cornerRadius(10)
