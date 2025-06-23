@@ -29,7 +29,7 @@ final class TransactionsViewModel {
         transaction in TransactionViewModel(
             id: transaction.id,
             amount: transaction.amount,
-            amountStr: "\(Int(truncating: NSDecimalNumber(decimal: transaction.amount)).formattedWithGroupSeparator()) ₽",
+            amountStr: "\(Int(truncating: NSDecimalNumber(decimal: transaction.amount)).formatted()) ₽",
             date: transaction.transactionDate,
             dateStr: "\(transaction.transactionDate)",
             comment: transaction.comment,
@@ -56,7 +56,7 @@ final class TransactionsViewModel {
     
     var sum: String {
         let sum = Int(truncating: NSDecimalNumber(decimal: transactions.map {$0.amount}.reduce(0, +)))
-        return "\(sum.formattedWithGroupSeparator()) ₽"
+        return "\(sum.formatted()) ₽"
     }
     
     func sortTransactions(sortBy: SortBy = .byDate) {
