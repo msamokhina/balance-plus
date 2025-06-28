@@ -1,6 +1,24 @@
 import SwiftUI
 
+// TODO: сделать попап общим для всех табов и более универсальным, не успела
+class PopupManager: ObservableObject {
+    @Published var showingPopup: Bool = false
+    @Published var popupContent: (any View)?
+
+    func showPopup<Content: View>(content: Content) {
+        self.popupContent = content
+        self.showingPopup = true
+    }
+
+    func hidePopup() {
+        self.showingPopup = false
+        self.popupContent = nil
+    }
+}
+
 struct MainTabView: View {
+    @StateObject var popupManager = PopupManager()
+    
     init() {
         UITabBar.appearance().backgroundColor = UIColor.white
     }
@@ -14,7 +32,12 @@ struct MainTabView: View {
                 TransactionsListView(direction: .income)
             }
             Tab("Счет", image: "account") {
-                AccountView()
+                ZStack {
+                    AccountView()
+                    if let content = popupManager.popupContent {
+                        AnyView(content)
+                    }
+                }
             }
             Tab("Статьи", image: "categories") {
                 CategoriesView()
@@ -23,6 +46,7 @@ struct MainTabView: View {
                 SettingsView()
             }
         }
+        .environmentObject(popupManager)
     }
 }
 
