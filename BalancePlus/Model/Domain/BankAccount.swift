@@ -1,9 +1,39 @@
 import Foundation
 
-enum Currency: String, Codable {
+enum Currency: String, Codable, CaseIterable, Identifiable {
     case rub = "RUB"
     case usd = "USD"
     case eur = "EUR"
+    
+    var id: String { self.rawValue }
+    
+    var symbol: String {
+        switch self {
+        case .rub: return "₽"
+        case .usd: return "$"
+        case .eur: return "€"
+        }
+    }
+    
+    var fullName: String {
+        switch self {
+        case .rub: return "Российский Рубль"
+        case .usd: return "Доллар США"
+        case .eur: return "Евро"
+        }
+    }
+    
+    init(symbol: String) {
+        for currency in Currency.allCases {
+            if currency.symbol == symbol {
+                self = currency
+                return
+            }
+        }
+        
+        self = Currency.rub
+        return
+    }
 }
 
 struct BankAccount: Codable, Identifiable {
@@ -12,7 +42,7 @@ struct BankAccount: Codable, Identifiable {
     let userId: Int
     let name: String
     var balance: Decimal
-    let currency: Currency
+    var currency: Currency
     let createdAt: Date
     var updatedAt: Date
     
