@@ -1,5 +1,6 @@
 import SwiftUI
 
+// TODO: сделать попап общим для всех табов и более универсальным, не успела
 class PopupManager: ObservableObject {
     @Published var showingPopup: Bool = false
     @Published var popupContent: (any View)?
