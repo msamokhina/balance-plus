@@ -5,6 +5,7 @@ struct BalanceView: View {
     @State var mode: AccountViewMode
     @Binding var balance: String
     @FocusState.Binding var isFocused: Bool
+    @State var spoilerIsOn = false
     
     var body: some View {
         if mode == .read {
@@ -13,6 +14,7 @@ struct BalanceView: View {
                 Text("Баланс")
                 Spacer()
                 Text(balance)
+                    .spoiler(isOn: $spoilerIsOn)
             }
             .padding()
             .background(Color("AccentColor"))
