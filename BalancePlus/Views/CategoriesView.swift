@@ -1,16 +1,22 @@
 import SwiftUI
 
 struct CategoriesView: View {
-    let viewModel: CategoriesViewModel
+    @State var viewModel: CategoriesViewModel
     
     var body: some View {
         BaseView(
             title: "Мои статьи",
             content: {
                 List() {
-                    Text("Hello, Categories!")
+                    Section("Статьи") {
+                        ForEach(viewModel.categories) { category in
+                            Text(category.name)
+                        }
+                    }
                 }
-            })
+            }).task {
+                viewModel.loadCategories()
+            }
     }
 }
 
