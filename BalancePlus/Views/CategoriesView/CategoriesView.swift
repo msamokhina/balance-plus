@@ -9,14 +9,16 @@ struct CategoriesView: View {
             content: {
                 List() {
                     Section("Статьи") {
-                        ForEach(viewModel.categories) { category in
-                            Text(category.name)
+                        ForEach(viewModel.filteredCategories) { category in
+                            CategoryView(viewModel: category)
                         }
                     }
                 }
-            }).task {
-                viewModel.loadCategories()
-            }
+            })
+        .searchable(text: $viewModel.searchText)
+        .task {
+            viewModel.loadCategories()
+        }
     }
 }
 
