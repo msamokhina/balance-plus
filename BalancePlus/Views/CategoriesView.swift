@@ -1,11 +1,21 @@
 import SwiftUI
 
 struct CategoriesView: View {
+    let viewModel: CategoriesViewModel
+    
     var body: some View {
-        Text("Hello, Categories!")
+        BaseView(
+            title: "Мои статьи",
+            content: {
+                List() {
+                    Text("Hello, Categories!")
+                }
+            })
     }
 }
 
 #Preview {
-    CategoriesView()
+    CategoriesView(
+        viewModel: .init(service: MockCategoriesService())
+    )
 }

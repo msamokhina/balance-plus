@@ -17,9 +17,11 @@ class PopupManager: ObservableObject {
 }
 
 struct MainTabView: View {
+    let viewModel: MainTabViewModel
     @StateObject var popupManager = PopupManager()
     
-    init() {
+    init(viewModel: MainTabViewModel) {
+        self.viewModel = viewModel
         UITabBar.appearance().backgroundColor = UIColor.white
     }
     
@@ -40,7 +42,7 @@ struct MainTabView: View {
                 }
             }
             Tab("Статьи", image: "categories") {
-                CategoriesView()
+                CategoriesView(viewModel: viewModel.categories)
             }
             Tab("Настройки", image: "settings") {
                 SettingsView()
@@ -51,5 +53,5 @@ struct MainTabView: View {
 }
 
 #Preview {
-    MainTabView()
+    MainTabView(viewModel: .init(categoriesService: MockCategoriesService()))
 }
