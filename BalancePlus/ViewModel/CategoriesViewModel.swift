@@ -6,15 +6,13 @@ final class CategoriesViewModel {
     
     var categories: [CategoryViewModel] = []
     var searchText: String = ""
-    
+
     var filteredCategories: [CategoryViewModel] {
         guard !searchText.isEmpty else {
             return categories
         }
         
-        return categories.filter { category in
-            category.name.lowercased().contains(searchText.lowercased())
-        }
+        return categories.filter { $0.name.fuzzyMatches(searchText) }
     }
     
     private let convert: (Category) -> CategoryViewModel = {
