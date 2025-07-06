@@ -3,9 +3,7 @@ import SwiftUI
 struct CurrencyView: View {
     @State var mode: AccountViewMode
     @Binding var currency: String
-    @State private var showingCurrencySheet: Bool = false
-    
-    @EnvironmentObject var popupManager: PopupManager
+    @State private var showingCurrencyDialog: Bool = false
     
     var body: some View {
         ZStack {
@@ -31,44 +29,15 @@ struct CurrencyView: View {
                 .background(Color.white)
                 .cornerRadius(10)
                 .onTapGesture {
-                    popupManager.showPopup(content: DetailView(currency: $currency))
+                    self.showingCurrencyDialog = true
                 }
-            }
-        }
-    }
-}
-
-struct DetailView: View {
-    @EnvironmentObject var popupManager: PopupManager
-    @Binding var currency: String
-    
-    var body: some View {
-        ZStack {
-            Color.black.opacity(0.2).ignoresSafeArea()
-                .onTapGesture() {
-                    popupManager.hidePopup()
-                }
-            VStack {
-                Spacer()
-                VStack {
-                    Text("Валюта")
-                        .bold()
-                        .padding(8)
-                    Divider()
-                    
+                .confirmationDialog("Валюта", isPresented: $showingCurrencyDialog) {
                     ForEach(Currency.allCases) { currency in
                         Button("\(currency.fullName) (\(currency.symbol))") {
-                            popupManager.hidePopup()
                             self.currency = currency.symbol
                         }
-                        .foregroundColor(Color("NavigationColor"))
-                        .padding(8)
-                        Divider()
                     }
                 }
-                .background(Color("BackgroundColor"))
-                .cornerRadius(10)
-                .padding()
             }
         }
     }
@@ -78,6 +47,6 @@ struct DetailView: View {
     @Previewable @State var currency: String = "$"
     VStack(spacing: 20) {
         CurrencyView(mode: .read, currency: $currency)
-        CurrencyView(mode: .write, currency: $currency).environmentObject(PopupManager())
+        CurrencyView(mode: .write, currency: $currency)
     }
 }
