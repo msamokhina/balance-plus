@@ -1,15 +1,16 @@
 import Foundation
 
 @Observable
-final class EditTransactionViewModel {
+final class CreateTransactionViewModel {
     let transactionsService: TransactionsServiceProtocol
     let categoriesService: CategoriesServiceProtocol
     var showingDetailSheet = false
-    var title = "Редактировать"
-    var transaction: Transaction?
+    var title = "Создать"
     var categories: [Category] = []
     var isLoading: Bool = false
     var errorMessage: String?
+    
+    var showingAlert: Bool = false
     
     var commentField: String = ""
     var amountField: String = ""
@@ -25,13 +26,16 @@ final class EditTransactionViewModel {
     }
     
     @MainActor
-    func show(transactionId: Int, direction: Direction) {
+    func show(direction: Direction) {
         errorMessage = nil
         showingDetailSheet = true
         fetchCategoriesByDirection(direction: direction)
-        transaction = transactionsService.mockTransactions.first(where: { $0.id == transactionId })
-        setFields(transaction)
         setTitle(direction: direction)
+        
+        commentField = ""
+        amountField = ""
+        categoryField = nil
+        dateField = Date()
     }
 
     func dismiss() {
@@ -39,25 +43,32 @@ final class EditTransactionViewModel {
     }
     
     @MainActor
-    func save() {
-        guard transaction != nil else { return }
-        
-        var newTransaction = transaction
-        if categoryField != nil {
-            newTransaction?.category = categoryField!
+    func create() {
+        if amountField.isEmpty || categoryField == nil {
+            showingAlert = true
+            return
         }
-        newTransaction?.amount = Decimal(string: amountField) ?? 0
-        newTransaction?.transactionDate = dateField
-        newTransaction?.comment = commentField.isEmpty == true ? nil : commentField
         
-        isLoading = true
+        let comment = commentField.isEmpty == true ? nil : commentField
+        
         Task {
             do {
-                transaction = try await transactionsService.updateTransaction(newTransaction!)
+                let account = try await MockBankAccountsService().fetchUserBankAccount()
+                let transaction: Transaction = Transaction(
+                    id: 200,
+                    account: account,
+                    category: categoryField!,
+                    amount: Decimal(string: amountField) ?? 0,
+                    transactionDate: dateField, comment: comment,
+                    createdAt: Date(),
+                    updatedAt: Date()
+                )
+                try await transactionsService.createTransaction(transaction)
+                
                 isLoading = false
                 dismiss()
             } catch {
-                errorMessage = "Не удалось обновить категорию"
+                errorMessage = "Что-то пошло не так"
                 isLoading = false
             }
         }
@@ -73,11 +84,10 @@ final class EditTransactionViewModel {
     }
     
     func setFields(_ transaction: Transaction?) {
-        guard let transaction = transaction else { return }
-        commentField = transaction.comment ?? ""
-        dateField = transaction.transactionDate
-        amountField = "\(transaction.amount)"
-        categoryField = transaction.category
+        commentField = ""
+        dateField = Date()
+        amountField = "0"
+        categoryField = nil
     }
     
     @MainActor
@@ -89,23 +99,6 @@ final class EditTransactionViewModel {
                 isLoading = false
             } catch {
                 errorMessage = "Не удалось загрузить категории"
-                isLoading = false
-            }
-        }
-    }
-    
-    @MainActor
-    func deleteTransaction() {
-        guard let transactionId = transaction?.id else { return }
-        
-        isLoading = true
-        Task {
-            do {
-                try await transactionsService.deleteTransaction(withID: transactionId)
-                isLoading = false
-                dismiss()
-            } catch {
-                errorMessage = "Не удалось удалить транзакцию"
                 isLoading = false
             }
         }

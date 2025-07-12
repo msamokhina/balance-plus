@@ -30,7 +30,7 @@ final class MockTransactionsService: TransactionsServiceProtocol {
         createdAt: Date().addingTimeInterval(-86400 * 30), updatedAt: Date().addingTimeInterval(-86400 * 30)
     )
     
-    private let mockSalaryCategory = Category(id: 100, name: "Зарплата", emoji: "💰", direction: .income)
+    private let mockSalaryCategory = Category(id: 1, name: "Зарплата", emoji: "💰", direction: .income)
     private let mockFoodCategory = Category(id: 101, name: "Еда и продукты", emoji: "🍔", direction: .outcome)
     private let mockTransportCategory = Category(id: 102, name: "Транспорт", emoji: "🚗", direction: .outcome)
     

@@ -92,11 +92,13 @@ struct HistoryView: View {
                             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
                     } else if viewModel.transactions.count > 0 {
                             List(viewModel.transactions) { transaction in
-                                NavigationLink {
-                                    Text(transaction.amountStr)
-                                } label: {
-                                    TransactionRow(transaction: transaction)
-                                }
+                                TransactionRow(transaction: transaction)
+                                    .contentShape(Rectangle())
+                                    .onTapGesture {
+                                        viewModel.editTransactionViewModel.show(
+                                            transactionId: transaction.id,
+                                            direction: viewModel.direction)
+                                    }
                             }
                             .listStyle(.plain)
                     }
@@ -134,6 +136,9 @@ struct HistoryView: View {
         .onAppear {
             viewModel.loadTransactions()
         }
+        .fullScreenCover(isPresented: $viewModel.editTransactionViewModel.showingDetailSheet) {
+            TransactionEditView(viewModel: viewModel.editTransactionViewModel)
+        }
     }
 }
 
@@ -152,5 +157,6 @@ struct DateLabel: View {
     HistoryView(viewModel: .init(
         direction: Direction.income,
         service: MockTransactionsService(),
-        editTransactionViewModel: .init(transactionsService: MockTransactionsService(), categoriesService: MockCategoriesService())))
+        editTransactionViewModel: .init(transactionsService: MockTransactionsService(), categoriesService: MockCategoriesService()),
+        createTransactionViewModel: .init(transactionsService: MockTransactionsService(), categoriesService: MockCategoriesService())))
 }

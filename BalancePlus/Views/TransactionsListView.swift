@@ -4,27 +4,28 @@ struct TransactionsListView: View {
     @State var viewModel: TransactionsViewModel
     
     var body: some View {
-        NavigationStack {
-            VStack {
+        ZStack(alignment: .bottomTrailing) {
+            NavigationStack {
                 VStack {
-                    SumView(sum: viewModel.sum)
-                    
-                    HStack {
-                        Text("ОПЕРАЦИИ")
-                            .font(.subheadline)
-                            .foregroundColor(Color.secondary)
-                        Spacer()
-                    }
-                    .padding(.top, 10)
-                    
-                    VStack{
-                        if viewModel.isLoading {
-                            ProgressView("Загрузка транзакций...")
-                                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-                        } else if  viewModel.transactions.count == 0 {
-                            Text("Операций за данный период нет")
-                                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-                        } else if viewModel.transactions.count > 0 {
+                    VStack {
+                        SumView(sum: viewModel.sum)
+                        
+                        HStack {
+                            Text("ОПЕРАЦИИ")
+                                .font(.subheadline)
+                                .foregroundColor(Color.secondary)
+                            Spacer()
+                        }
+                        .padding(.top, 10)
+                        
+                        VStack{
+                            if viewModel.isLoading {
+                                ProgressView("Загрузка транзакций...")
+                                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                            } else if  viewModel.transactions.count == 0 {
+                                Text("Операций за данный период нет")
+                                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                            } else if viewModel.transactions.count > 0 {
                                 List(viewModel.transactions) { transaction in
                                     TransactionRow(transaction: transaction)
                                         .contentShape(Rectangle())
@@ -35,34 +36,51 @@ struct TransactionsListView: View {
                                         }
                                 }
                                 .listStyle(.plain)
+                            }
+                        }
+                        .background(Color.white)
+                        .cornerRadius(10)
+                    }
+                    .padding()
+                    
+                    Spacer()
+                }
+                .background(Color("BackgroundColor"))
+                .toolbar {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        NavigationLink {
+                            HistoryView(viewModel: TransactionsViewModel(direction: viewModel.direction, selectedStartDate: Date().startOfDayMonthAgo(), selectedEndDate: Date().endOfDay(), service: viewModel.service, editTransactionViewModel: viewModel.editTransactionViewModel, createTransactionViewModel: viewModel.createTransactionViewModel))
+                        } label: {
+                            Image(systemName: "clock")
                         }
                     }
-                    .background(Color.white)
-                    .cornerRadius(10)
                 }
-                .padding()
-
-                Spacer()
-            }
-            .background(Color("BackgroundColor"))
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    NavigationLink {
-                        HistoryView(viewModel: TransactionsViewModel(direction: viewModel.direction, selectedStartDate: Date().startOfDayMonthAgo(), selectedEndDate: Date().endOfDay(), service: viewModel.service, editTransactionViewModel: viewModel.editTransactionViewModel))
-                    } label: {
-                        Image(systemName: "clock")
-                    }
+                .navigationTitle("\(viewModel.direction == .income ? "Доходы" : "Расходы") сегодня")
+                .onAppear {
+                    viewModel.loadTransactions()
+                }
+                .fullScreenCover(isPresented: $viewModel.editTransactionViewModel.showingDetailSheet) {
+                    TransactionEditView(viewModel: viewModel.editTransactionViewModel)
+                }
+                .fullScreenCover(isPresented: $viewModel.createTransactionViewModel.showingDetailSheet) {
+                    TransactionCreateView(viewModel: viewModel.createTransactionViewModel)
                 }
             }
-            .navigationTitle("\(viewModel.direction == .income ? "Доходы" : "Расходы") сегодня")
-            .onAppear {
-                viewModel.loadTransactions()
+            .tint(Color("NavigationColor"))
+            
+            Button(action: {
+                viewModel.createTransactionViewModel.show(direction: viewModel.direction)
+            }) {
+                Image(systemName: "plus")
+                    .font(.title.weight(.semibold))
+                    .foregroundColor(.white)
+                    .padding()
+                    .background(Color.accentColor)
+                    .clipShape(Circle())
             }
-            .fullScreenCover(isPresented: $viewModel.editTransactionViewModel.showingDetailSheet) {
-                TransactionEditView(viewModel: viewModel.editTransactionViewModel)
-            }
+            .padding(.trailing, 20)
+            .padding(.bottom, 20)
         }
-        .tint(Color("NavigationColor"))
     }
 }
 
@@ -103,11 +121,11 @@ struct TransactionRow: View {
             Spacer()
             
             Text(transaction.amountStr)
-//            Image(systemName: "chevron.right").foregroundStyle(.secondary)
+            Image(systemName: "chevron.right").foregroundStyle(.secondary)
         }
     }
 }
 
 #Preview {
-    TransactionsListView(viewModel: .init(direction: Direction.income, service: MockTransactionsService(), editTransactionViewModel: .init(transactionsService: MockTransactionsService(), categoriesService: MockCategoriesService())))
+    TransactionsListView(viewModel: .init(direction: Direction.income, service: MockTransactionsService(), editTransactionViewModel: .init(transactionsService: MockTransactionsService(), categoriesService: MockCategoriesService()), createTransactionViewModel: .init(transactionsService: MockTransactionsService(), categoriesService: MockCategoriesService())))
 }

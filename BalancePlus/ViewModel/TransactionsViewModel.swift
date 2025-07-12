@@ -20,6 +20,7 @@ enum SortBy {
 @Observable
 final class TransactionsViewModel {
     var editTransactionViewModel: EditTransactionViewModel
+    var createTransactionViewModel: CreateTransactionViewModel
     var transactions: [TransactionViewModel] = []
     var isLoading: Bool = false
     var errorMessage: String?
@@ -48,13 +49,15 @@ final class TransactionsViewModel {
          selectedStartDate: Date = Date().startOfDay(),
          selectedEndDate: Date = Date().endOfDay(),
          service: TransactionsServiceProtocol,
-         editTransactionViewModel: EditTransactionViewModel
+         editTransactionViewModel: EditTransactionViewModel,
+         createTransactionViewModel: CreateTransactionViewModel
     ) {
         self.direction = direction
         self.selectedStartDate = selectedStartDate
         self.selectedEndDate = selectedEndDate
         self.service = service
         self.editTransactionViewModel = editTransactionViewModel
+        self.createTransactionViewModel = createTransactionViewModel
     }
     
     var sum: String {
