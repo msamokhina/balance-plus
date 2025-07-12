@@ -1,22 +1,12 @@
 import SwiftUI
 
 struct TransactionsListView: View {
-    @State private var viewModel: TransactionsViewModel
-    init(direction: Direction) {
-        _viewModel = State(initialValue: TransactionsViewModel(direction: direction))
-    }
+    @State var viewModel: TransactionsViewModel
     
     var body: some View {
         NavigationStack {
             VStack {
                 VStack {
-                    HStack {
-                        Text("\(viewModel.direction == .income ? "Доходы" : "Расходы") сегодня")
-                            .font(.largeTitle)
-                            .bold()
-                        Spacer()
-                    }
-                                    
                     SumView(sum: viewModel.sum)
                     
                     HStack {
@@ -36,11 +26,13 @@ struct TransactionsListView: View {
                                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
                         } else if viewModel.transactions.count > 0 {
                                 List(viewModel.transactions) { transaction in
-                                    NavigationLink {
-                                        Text(transaction.amountStr)
-                                    } label: {
-                                        TransactionRow(transaction: transaction)
-                                    }
+                                    TransactionRow(transaction: transaction)
+                                        .contentShape(Rectangle())
+                                        .onTapGesture {
+                                            viewModel.editTransactionViewModel.show(
+                                                transactionId: transaction.id,
+                                                direction: viewModel.direction)
+                                        }
                                 }
                                 .listStyle(.plain)
                         }
@@ -56,14 +48,18 @@ struct TransactionsListView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     NavigationLink {
-                        HistoryView(direction: viewModel.direction)
+                        HistoryView(viewModel: TransactionsViewModel(direction: viewModel.direction, selectedStartDate: Date().startOfDayMonthAgo(), selectedEndDate: Date().endOfDay(), service: viewModel.service, editTransactionViewModel: viewModel.editTransactionViewModel))
                     } label: {
                         Image(systemName: "clock")
                     }
                 }
             }
+            .navigationTitle("\(viewModel.direction == .income ? "Доходы" : "Расходы") сегодня")
             .onAppear {
                 viewModel.loadTransactions()
+            }
+            .fullScreenCover(isPresented: $viewModel.editTransactionViewModel.showingDetailSheet) {
+                TransactionEditView(viewModel: viewModel.editTransactionViewModel)
             }
         }
         .tint(Color("NavigationColor"))
@@ -107,10 +103,11 @@ struct TransactionRow: View {
             Spacer()
             
             Text(transaction.amountStr)
+//            Image(systemName: "chevron.right").foregroundStyle(.secondary)
         }
     }
 }
 
 #Preview {
-    TransactionsListView(direction:.income)
+    TransactionsListView(viewModel: .init(direction: Direction.income, service: MockTransactionsService(), editTransactionViewModel: .init(transactionsService: MockTransactionsService(), categoriesService: MockCategoriesService())))
 }

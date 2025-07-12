@@ -1,21 +1,11 @@
 import SwiftUI
 
 struct HistoryView: View {
-    @State private var viewModel: TransactionsViewModel
-    init(direction: Direction) {
-        _viewModel = State(initialValue: TransactionsViewModel(direction: direction, selectedStartDate: Date().startOfDayMonthAgo(), selectedEndDate: Date().endOfDay()))
-    }
+    @State var viewModel: TransactionsViewModel
 
     var body: some View {
         VStack{
             VStack {
-                HStack {
-                    Text("Моя история")
-                        .font(.largeTitle)
-                        .bold()
-                    Spacer()
-                }
-                
                 VStack {
                     HStack {
                         Text("Начало")
@@ -117,9 +107,19 @@ struct HistoryView: View {
             .padding()
             .background(Color("BackgroundColor"))
         }
+        .navigationTitle("Моя история")
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                Button(action: {}) {
+                NavigationLink {
+                    AnalyseVCRepresentable(
+                        direction: viewModel.direction,
+                        selectedStartDate: viewModel.selectedStartDate,
+                        selectedEndDate: viewModel.selectedEndDate,
+                        service: viewModel.service
+                    )
+                        .navigationTitle("Анализ")
+                        .background(Color("BackgroundColor"))
+                } label: {
                     Image(systemName: "doc")
                 }
             }
@@ -149,5 +149,8 @@ struct DateLabel: View {
 }
 
 #Preview {
-    HistoryView(direction: .income)
+    HistoryView(viewModel: .init(
+        direction: Direction.income,
+        service: MockTransactionsService(),
+        editTransactionViewModel: .init(transactionsService: MockTransactionsService(), categoriesService: MockCategoriesService())))
 }

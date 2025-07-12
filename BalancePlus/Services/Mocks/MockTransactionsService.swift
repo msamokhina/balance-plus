@@ -1,14 +1,28 @@
 import Foundation
 
+enum TransactionsSortType: CaseIterable {
+    case byDate
+    case byAmount
+    
+    var name: String {
+        switch self {
+        case .byDate: return "По дате"
+        case .byAmount: return "По сумме"
+        }
+    }
+}
+
 protocol TransactionsServiceProtocol {
+    var mockTransactions: [Transaction] { get }
     func fetchTransactions(from startDate: Date, to endDate: Date) async throws -> [Transaction]
+    func fetchTransactionsByDirection(from startDate: Date, to endDate: Date, direction: Direction, sortBy: TransactionsSortType) async throws -> [Transaction]
     func createTransaction(_ transaction: Transaction) async throws -> Transaction
     func updateTransaction(_ transaction: Transaction) async throws -> Transaction
     func deleteTransaction(withID transactionID: Int) async throws
 }
 
 final class MockTransactionsService: TransactionsServiceProtocol {
-    private var mockTransactions: [Transaction] = []
+    private(set) var mockTransactions: [Transaction] = []
     private var nextID: Int = 0 // Для генерации уникальных ID для новых транзакций
 
     private let mockAccount = BankAccount(
@@ -19,7 +33,7 @@ final class MockTransactionsService: TransactionsServiceProtocol {
     private let mockSalaryCategory = Category(id: 100, name: "Зарплата", emoji: "💰", direction: .income)
     private let mockFoodCategory = Category(id: 101, name: "Еда и продукты", emoji: "🍔", direction: .outcome)
     private let mockTransportCategory = Category(id: 102, name: "Транспорт", emoji: "🚗", direction: .outcome)
-
+    
     // Инициализатор, который заполняет моковые данные при создании сервиса
     init() {
         setupInitialMockData()
@@ -79,6 +93,28 @@ final class MockTransactionsService: TransactionsServiceProtocol {
         return mockTransactions.filter { transaction in
             transaction.transactionDate >= startDate && transaction.transactionDate <= endDate
         }.sorted { $0.transactionDate < $1.transactionDate }
+    }
+    
+    func fetchTransactionsByDirection(from startDate: Date, to endDate: Date, direction: Direction, sortBy: TransactionsSortType) async throws -> [Transaction] {
+        // Имитация сетевой задержки
+        try await Task.sleep(nanoseconds: 500_000_000) // 0.5 секунды
+
+        var transactions = mockTransactions.filter { transaction in
+            transaction.category.direction == direction &&
+            transaction.transactionDate >= startDate &&
+            transaction.transactionDate <= endDate
+        }
+        
+        switch sortBy {
+        case .byDate:
+            // По дате сортируем по убыванию, сверху всегда более свежие оперции
+            transactions = transactions.sorted { $0.transactionDate < $1.transactionDate }
+        case .byAmount:
+            // По цене сортируем по возрастанию, предполагаю, что пользователю в первую очередь интересны крупные расходы
+            transactions = transactions.sorted { $0.amount > $1.amount }
+        }
+        
+        return transactions
     }
 
     func createTransaction(_ transaction: Transaction) async throws -> Transaction {
