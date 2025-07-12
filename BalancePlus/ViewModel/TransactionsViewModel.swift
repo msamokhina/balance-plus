@@ -19,17 +19,19 @@ enum SortBy {
 
 @Observable
 final class TransactionsViewModel {
+    var editTransactionViewModel: EditTransactionViewModel
+    var createTransactionViewModel: CreateTransactionViewModel
     var transactions: [TransactionViewModel] = []
     var isLoading: Bool = false
     var errorMessage: String?
     private(set) var sort: SortBy = .byDate
     
-    private let provider: TransactionsServiceProtocol
+    let service: TransactionsServiceProtocol
     private let convert: (Transaction) -> TransactionViewModel = {
         transaction in TransactionViewModel(
             id: transaction.id,
             amount: transaction.amount,
-            amountStr: "\(Int(truncating: NSDecimalNumber(decimal: transaction.amount)).formatted()) ₽",
+            amountStr: "\(Int(truncating: NSDecimalNumber(decimal: transaction.amount)).formatted()) \(transaction.account.currency.symbol)",
             date: transaction.transactionDate,
             dateStr: "\(transaction.transactionDate)",
             comment: transaction.comment,
@@ -46,12 +48,16 @@ final class TransactionsViewModel {
     init(direction: Direction,
          selectedStartDate: Date = Date().startOfDay(),
          selectedEndDate: Date = Date().endOfDay(),
-         provider: TransactionsServiceProtocol = MockTransactionsService()
+         service: TransactionsServiceProtocol,
+         editTransactionViewModel: EditTransactionViewModel,
+         createTransactionViewModel: CreateTransactionViewModel
     ) {
         self.direction = direction
         self.selectedStartDate = selectedStartDate
         self.selectedEndDate = selectedEndDate
-        self.provider = provider
+        self.service = service
+        self.editTransactionViewModel = editTransactionViewModel
+        self.createTransactionViewModel = createTransactionViewModel
     }
     
     var sum: String {
@@ -77,7 +83,7 @@ final class TransactionsViewModel {
         errorMessage = nil
         Task {
             do {
-                let fetchedTransactions = try await provider.fetchTransactions(from: selectedStartDate, to: selectedEndDate)
+                let fetchedTransactions = try await service.fetchTransactions(from: selectedStartDate, to: selectedEndDate)
                 transactions = fetchedTransactions.filter { $0.category.direction == direction }.map{convert($0)}
                 self.sortTransactions(sortBy: .byDate)
                 isLoading = false

@@ -1,21 +1,11 @@
 import SwiftUI
 
 struct HistoryView: View {
-    @State private var viewModel: TransactionsViewModel
-    init(direction: Direction) {
-        _viewModel = State(initialValue: TransactionsViewModel(direction: direction, selectedStartDate: Date().startOfDayMonthAgo(), selectedEndDate: Date().endOfDay()))
-    }
+    @State var viewModel: TransactionsViewModel
 
     var body: some View {
         VStack{
             VStack {
-                HStack {
-                    Text("Моя история")
-                        .font(.largeTitle)
-                        .bold()
-                    Spacer()
-                }
-                
                 VStack {
                     HStack {
                         Text("Начало")
@@ -102,11 +92,13 @@ struct HistoryView: View {
                             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
                     } else if viewModel.transactions.count > 0 {
                             List(viewModel.transactions) { transaction in
-                                NavigationLink {
-                                    Text(transaction.amountStr)
-                                } label: {
-                                    TransactionRow(transaction: transaction)
-                                }
+                                TransactionRow(transaction: transaction)
+                                    .contentShape(Rectangle())
+                                    .onTapGesture {
+                                        viewModel.editTransactionViewModel.show(
+                                            transactionId: transaction.id,
+                                            direction: viewModel.direction)
+                                    }
                             }
                             .listStyle(.plain)
                     }
@@ -117,9 +109,19 @@ struct HistoryView: View {
             .padding()
             .background(Color("BackgroundColor"))
         }
+        .navigationTitle("Моя история")
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                Button(action: {}) {
+                NavigationLink {
+                    AnalyseVCRepresentable(
+                        direction: viewModel.direction,
+                        selectedStartDate: viewModel.selectedStartDate,
+                        selectedEndDate: viewModel.selectedEndDate,
+                        service: viewModel.service
+                    )
+                        .navigationTitle("Анализ")
+                        .background(Color("BackgroundColor"))
+                } label: {
                     Image(systemName: "doc")
                 }
             }
@@ -133,6 +135,9 @@ struct HistoryView: View {
         }
         .onAppear {
             viewModel.loadTransactions()
+        }
+        .fullScreenCover(isPresented: $viewModel.editTransactionViewModel.showingDetailSheet) {
+            TransactionEditView(viewModel: viewModel.editTransactionViewModel)
         }
     }
 }
@@ -149,5 +154,9 @@ struct DateLabel: View {
 }
 
 #Preview {
-    HistoryView(direction: .income)
+    HistoryView(viewModel: .init(
+        direction: Direction.income,
+        service: MockTransactionsService(),
+        editTransactionViewModel: .init(transactionsService: MockTransactionsService(), categoriesService: MockCategoriesService()),
+        createTransactionViewModel: .init(transactionsService: MockTransactionsService(), categoriesService: MockCategoriesService())))
 }
