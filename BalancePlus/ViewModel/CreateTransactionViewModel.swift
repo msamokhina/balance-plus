@@ -55,7 +55,7 @@ final class CreateTransactionViewModel {
             do {
                 let account = try await MockBankAccountsService().fetchUserBankAccount()
                 let transaction: Transaction = Transaction(
-                    id: 200,
+                    id: Int(Date().timeIntervalSince1970),
                     account: account,
                     category: categoryField!,
                     amount: Decimal(string: amountField) ?? 0,

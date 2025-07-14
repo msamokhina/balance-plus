@@ -103,7 +103,6 @@ struct AmountView: View {
         guard let decimalSeparator = Locale.current.decimalSeparator else {return}
         
         var cleanedValue = newValue
-        
         var allowedCharacters = CharacterSet.decimalDigits
         allowedCharacters.insert(charactersIn: decimalSeparator)
 
@@ -126,15 +125,12 @@ struct DateView: View {
     @Binding var date: Date
     
     var body: some View {
-        HStack {
-            Text("Дата")
-            Spacer()
-            DatePicker(
-                selection: $date,
-                in: ...Date(),
-                displayedComponents: .date
-            ){}
-        }
+        DatePicker(
+            "Дата",
+            selection: $date,
+            in: ...Date(),
+            displayedComponents: .date
+        )
     }
 }
 
@@ -142,14 +138,11 @@ struct TimeView: View {
     @Binding var date: Date
     
     var body: some View {
-        HStack {
-            Text("Время")
-            Spacer()
-            DatePicker(
-                selection: $date,
-                displayedComponents: .hourAndMinute
-            ){}
-        }
+        DatePicker(
+            "Время",
+            selection: $date,
+            displayedComponents: .hourAndMinute
+        )
     }
 }
 
