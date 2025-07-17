@@ -18,7 +18,7 @@ enum Direction {
     }
 }
 
-struct Category: Codable, Identifiable, Hashable {
+struct Category: Codable, Identifiable, Hashable, ResponseBody {
     let id: Int
     let name: String
     let emoji: Character

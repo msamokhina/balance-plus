@@ -63,7 +63,7 @@ final class CreateTransactionViewModel {
                     createdAt: Date(),
                     updatedAt: Date()
                 )
-                try await transactionsService.createTransaction(transaction)
+                _ = try await transactionsService.createTransaction(transaction)
                 
                 isLoading = false
                 dismiss()

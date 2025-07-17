@@ -1,69 +1,196 @@
 import SwiftUI
 
+protocol BalanceConverterProtocol {
+    func convert(_ value: Decimal) -> String
+    func convert(_ value: String) -> Decimal
+}
+
+struct BalanceConverter: BalanceConverterProtocol {
+    func convert(_ value: Decimal) -> String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        formatter.locale = Locale.current
+        formatter.maximumFractionDigits = 2
+        formatter.usesGroupingSeparator = true
+        return formatter.string(from: value as NSDecimalNumber) ?? value.description
+    }
+
+    func convert(_ value: String) -> Decimal {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        formatter.locale = Locale.current
+        formatter.usesGroupingSeparator = true
+        return formatter.number(from: value)?.decimalValue ?? .zero
+    }
+}
+
 @Observable
 final class AccountViewModel {
-    var balance: String
-    var currency: String
-    var mode: AccountViewMode
-    private let provider: BankAccountsServiceProtocol
+    enum State {
+        case processing(ProcessingViewModel)
+        case error(ErrorViewModel)
+        case idle(IdleStateViewModel)
+        case editing(EditingStateViewModel)
+    }
 
-    init(balance: String = "0",
-         currency: String = "₽",
-         mode: AccountViewMode = .read,
-         provider: BankAccountsServiceProtocol = MockBankAccountsService()) {
-        self.balance = balance
-        self.currency = currency
-        self.mode = mode
-        self.provider = provider
+    var state: State
+    private let service: BankAccountServiceProtocol
+
+    var showingAlert: Bool = false
+    
+    var bankAccount: BankAccount?
+    private let balanceConverter: BalanceConverterProtocol
+    
+    init(state: State, service: BankAccountServiceProtocol) {
+        self.state = state
+        self.service = service
+        self.balanceConverter = BalanceConverter()
     }
 
     func onEdit() {
-        mode = .write
+        guard case .idle(let idleViewModel) = state else { return }
+
+        state = .editing(EditingStateViewModel(
+            balance: idleViewModel.balance,
+            currency: idleViewModel.currency))
     }
-    
+
+    @MainActor
     func onSave() {
+        guard case .editing(let editingViewModel) = state else { return }
+
+        let newCurrency = editingViewModel.currency
+        let newBalance = editingViewModel.balance
+        
+        // если изменений нет, на сервер не идем
+        if newCurrency == bankAccount?.currency &&
+            balanceConverter.convert(newBalance) == bankAccount?.balance {
+            state = .idle(IdleStateViewModel(
+                currency: newCurrency,
+                balance: newBalance
+            ))
+            
+            return
+        }
+        
+        state = .processing(ProcessingViewModel(reason: .saving))
         Task {
-            await updateBankAccount()
+            do {
+                let updatedBankAccount = try await service.updateBankAccount(
+                    id: bankAccount!.id,
+                    name: bankAccount!.name,
+                    balance: balanceConverter.convert(newBalance),
+                    currency: newCurrency
+                )
+                
+                state = .idle(IdleStateViewModel(
+                    currency: newCurrency,
+                    balance: balanceConverter.convert(updatedBankAccount.balance)
+                ))
+            } catch {
+                if let networkError = error as? NetworkError {
+                    state = .error(ErrorViewModel(message: networkError.localizedDescription))
+                } else {
+                    state = .error(ErrorViewModel(message: "Произошла непредвиденная ошибка."))
+                }
+                showingAlert = true
+            }
         }
     }
     
     @MainActor
-    func updateBankAccount() {
-        let groupingSeparator: String = Locale.current.groupingSeparator ?? " "
-        let newBalance = Decimal(string: balance.replacingOccurrences(of: groupingSeparator, with: "")) ?? Decimal(0)
-        
-        let newCurrency = Currency(symbol: currency)
+    func onRefresh() {
+        Task {
+            do {
+                let fetchedBankAccount = try await service.fetchUserBankAccount()
+                bankAccount = fetchedBankAccount
+                state = .idle(IdleStateViewModel(
+                    currency: fetchedBankAccount.currency,
+                    balance: self.balanceConverter.convert(fetchedBankAccount.balance)
+                ))
+            } catch {
+                if let networkError = error as? NetworkError {
+                    state = .error(ErrorViewModel(message: networkError.localizedDescription))
+                } else {
+                    state = .error(ErrorViewModel(message: "Произошла непредвиденная ошибка."))
+                }
+                showingAlert = true
+            }
+        }
+    }
+    
+    @MainActor
+    func loadBankAccount() {
+        state = .processing(ProcessingViewModel(reason: .loading))
         
         Task {
             do {
-                let updatedAccount = try await provider.updateBankAccount(currency: newCurrency, balance: newBalance)
-                
-                self.balance = Int(truncating: NSDecimalNumber(decimal: updatedAccount.balance)).formatted()
-                self.currency = updatedAccount.currency.symbol
-                self.mode = .read
-            } catch {}
+                let fetchedBankAccount = try await service.fetchUserBankAccount()
+                bankAccount = fetchedBankAccount
+                state = .idle(IdleStateViewModel(
+                    currency: fetchedBankAccount.currency,
+                    balance: self.balanceConverter.convert(fetchedBankAccount.balance)
+                ))
+            } catch {
+                if let networkError = error as? NetworkError {
+                    state = .error(ErrorViewModel(message: networkError.localizedDescription))
+                } else {
+                    state = .error(ErrorViewModel(message: "Произошла непредвиденная ошибка."))
+                }
+                showingAlert = true
+            }
+        }
+    }
+}
+
+enum ProcessingAccountReason: String {
+    case loading
+    case saving
+    
+    var text: String {
+        switch self {
+        case .loading: return "Загрузка счета..."
+        case .saving: return "Сохранение счета..."
+        }
+    }
+}
+
+extension AccountViewModel {
+    final class ProcessingViewModel {
+        let reason: ProcessingAccountReason
+        
+        init(reason: ProcessingAccountReason) {
+            self.reason = reason
         }
     }
     
-    @MainActor
-    func loadBalance() async {
-        let prevMode = self.mode
-        self.mode = .loading
+    final class ErrorViewModel {
+        let message: String
         
-        // Делаем минимальную задержку чтобы на pull to refresh лоадер не дергался и быстро не исчезал
-        let startTime = Date()
-        let minimumDisplayDuration: TimeInterval = 0.9
-        do {
-            let fetchedAccount = try await provider.fetchUserBankAccount()
-            let endTime = Date()
-            let elapsedTime = endTime.timeIntervalSince(startTime) // Сколько времени занял запрос
+        init(message: String) {
+            self.message = message
+        }
+    }
+    
+    final class IdleStateViewModel {
+        var balance: String = "1000"
+        var currency: Currency
 
-            if elapsedTime < minimumDisplayDuration {
-                try await Task.sleep(for: .seconds(minimumDisplayDuration - elapsedTime))
-            }
-            self.mode = prevMode
-            self.balance = Int(truncating: NSDecimalNumber(decimal: fetchedAccount.balance)).formatted()
-            self.currency = fetchedAccount.currency.symbol
-        } catch {}
+        init(currency: Currency, balance: String) {
+            self.currency = currency
+            self.balance = balance
+        }
+    }
+
+    @Observable
+    final class EditingStateViewModel {
+        var balance: String
+        var currency: Currency
+
+        init(balance: String, currency: Currency) {
+            self.balance = balance
+            self.currency = currency
+        }
+
     }
 }

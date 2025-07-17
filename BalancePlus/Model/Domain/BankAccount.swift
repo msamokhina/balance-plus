@@ -36,7 +36,7 @@ enum Currency: String, Codable, CaseIterable, Identifiable {
     }
 }
 
-struct BankAccount: Codable, Identifiable {
+struct BankAccount: Codable, Identifiable, ResponseBody {
     // TODO: проверить по макетам, какие поля мы можем изменять
     let id: Int
     let userId: Int
