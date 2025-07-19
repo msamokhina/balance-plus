@@ -95,7 +95,7 @@ extension Transaction {
     }
 }
 
-struct Transaction: Codable, Identifiable {
+struct Transaction: Codable, Identifiable, ResponseBody {
     let id: Int
     let account: BankAccount
     var category: Category
@@ -118,8 +118,8 @@ struct Transaction: Codable, Identifiable {
     
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        
         id = try container.decode(Int.self, forKey: .id)
+
         account = try container.decode(BankAccount.self, forKey: .account)
         category = try container.decode(Category.self, forKey: .category)
         
@@ -132,40 +132,48 @@ struct Transaction: Codable, Identifiable {
             )
         }
         amount = decodedAmount
-        
-        let formatter = ISO8601DateFormatter.withFractionalSeconds
 
         let transactionDateString = try container.decode(String.self, forKey: .transactionDate)
-        guard let decodedTransactionDate = formatter.date(from: transactionDateString) else {
+        if let decodedTransactionDate = ISO8601DateFormatter.withFractionalSeconds.date(from: transactionDateString) {
+            transactionDate = decodedTransactionDate
+        } else if let decodedTransactionDate = ISO8601DateFormatter.withoutFractionalSeconds.date(from: transactionDateString) {
+            transactionDate = decodedTransactionDate
+        } else {
             throw DecodingError.dataCorruptedError(
                 forKey: .transactionDate,
                 in: container,
                 debugDescription: "Cannot decode transactionDate string to Date with ISO8601"
             )
         }
-        transactionDate = decodedTransactionDate
+        
         
         comment = try container.decodeIfPresent(String.self, forKey: .comment)
         
         let createdAtString = try container.decode(String.self, forKey: .createdAt)
-        guard let decodedCreatedAt = formatter.date(from: createdAtString) else {
+        if let decodedCreatedAt = ISO8601DateFormatter.withFractionalSeconds.date(from: createdAtString) {
+            createdAt = decodedCreatedAt
+        } else if let decodedCreatedAt = ISO8601DateFormatter.withoutFractionalSeconds.date(from: createdAtString) {
+            createdAt = decodedCreatedAt
+        } else {
             throw DecodingError.dataCorruptedError(
                 forKey: .createdAt,
                 in: container,
                 debugDescription: "Cannot decode createdAt string to Date with ISO8601"
             )
         }
-        createdAt = decodedCreatedAt
         
         let updatedAtString = try container.decode(String.self, forKey: .updatedAt)
-        guard let decodedUpdatedAt = formatter.date(from: updatedAtString) else {
+        if let decodedUpdatedAt = ISO8601DateFormatter.withFractionalSeconds.date(from: updatedAtString) {
+            updatedAt = decodedUpdatedAt
+        } else if let decodedUpdatedAt = ISO8601DateFormatter.withoutFractionalSeconds.date(from: updatedAtString) {
+            updatedAt = decodedUpdatedAt
+        } else {
             throw DecodingError.dataCorruptedError(
                 forKey: .updatedAt,
                 in: container,
                 debugDescription: "Cannot decode updatedAt string to Date with ISO8601"
             )
         }
-        updatedAt = decodedUpdatedAt
     }
     
     func encode(to encoder: Encoder) throws {
@@ -193,5 +201,87 @@ struct Transaction: Codable, Identifiable {
         self.comment = comment
         self.createdAt = createdAt
         self.updatedAt = updatedAt
+    }
+}
+
+struct TransactionCreated: Decodable, Identifiable, ResponseBody {
+    let id: Int
+    let accountId: Int
+    var categoryId: Int
+    var amount: Decimal
+    var transactionDate: Date
+    var comment: String?
+    let createdAt: Date
+    var updatedAt: Date
+    
+    enum CodingKeys: String, CodingKey {
+        case id
+        case accountId
+        case categoryId
+        case amount
+        case transactionDate
+        case comment
+        case createdAt
+        case updatedAt
+    }
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(Int.self, forKey: .id)
+
+        accountId = try container.decode(Int.self, forKey: .accountId)
+        categoryId = try container.decode(Int.self, forKey: .categoryId)
+        
+        let amountString = try container.decode(String.self, forKey: .amount)
+        guard let decodedAmount = Decimal(string: amountString) else {
+            throw DecodingError.dataCorruptedError(
+                forKey: .accountId,
+                in: container,
+                debugDescription: "Cannot decode account string to Decimal"
+            )
+        }
+        amount = decodedAmount
+
+        let transactionDateString = try container.decode(String.self, forKey: .transactionDate)
+        if let decodedTransactionDate = ISO8601DateFormatter.withFractionalSeconds.date(from: transactionDateString) {
+            transactionDate = decodedTransactionDate
+        } else if let decodedTransactionDate = ISO8601DateFormatter.withoutFractionalSeconds.date(from: transactionDateString) {
+            transactionDate = decodedTransactionDate
+        } else {
+            throw DecodingError.dataCorruptedError(
+                forKey: .transactionDate,
+                in: container,
+                debugDescription: "Cannot decode transactionDate string to Date with ISO8601"
+            )
+        }
+        
+        
+        comment = try container.decodeIfPresent(String.self, forKey: .comment)
+        
+        let createdAtString = try container.decode(String.self, forKey: .createdAt)
+        if let decodedCreatedAt = ISO8601DateFormatter.withFractionalSeconds.date(from: createdAtString) {
+            createdAt = decodedCreatedAt
+        } else if let decodedCreatedAt = ISO8601DateFormatter.withoutFractionalSeconds.date(from: createdAtString) {
+            createdAt = decodedCreatedAt
+        } else {
+            throw DecodingError.dataCorruptedError(
+                forKey: .createdAt,
+                in: container,
+                debugDescription: "Cannot decode createdAt string to Date with ISO8601"
+            )
+        }
+        
+        let updatedAtString = try container.decode(String.self, forKey: .updatedAt)
+        if let decodedUpdatedAt = ISO8601DateFormatter.withFractionalSeconds.date(from: updatedAtString) {
+            updatedAt = decodedUpdatedAt
+        } else if let decodedUpdatedAt = ISO8601DateFormatter.withoutFractionalSeconds.date(from: updatedAtString) {
+            updatedAt = decodedUpdatedAt
+        } else {
+            throw DecodingError.dataCorruptedError(
+                forKey: .updatedAt,
+                in: container,
+                debugDescription: "Cannot decode updatedAt string to Date with ISO8601"
+            )
+        }
     }
 }

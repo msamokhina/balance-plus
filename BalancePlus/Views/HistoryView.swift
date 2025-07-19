@@ -1,112 +1,98 @@
 import SwiftUI
 
 struct HistoryView: View {
-    @State var viewModel: TransactionsViewModel
+    @State var viewModel: HistoryViewModel
 
     var body: some View {
         VStack{
-            VStack {
-                VStack {
-                    HStack {
-                        Text("Начало")
-                        Spacer()
-                        DateLabel(date: viewModel.selectedStartDate)
-                            .overlay {
-                                DatePicker(
-                                    selection: $viewModel.selectedStartDate,
-                                    displayedComponents: .date
-                                ){}.colorMultiply(.clear)
-                                    .tint(Color("AccentColor"))
-                                    .onChange(of: viewModel.selectedStartDate) {
-                                        viewModel.selectedStartDate = viewModel.selectedStartDate.startOfDay()
-                                        
-                                        if viewModel.selectedStartDate > viewModel.selectedEndDate {
-                                            viewModel.selectedEndDate = viewModel.selectedStartDate.endOfDay()
-                                        }
-                                    }
-                            }
+            List {
+                Section {
+                    DatePicker(
+                        "Начало",
+                        selection: $viewModel.selectedStartDate,
+                        displayedComponents: .date
+                    )
+                    .tint(Color("AccentColor"))
+                    .onChange(of: viewModel.selectedStartDate) {
+                        viewModel.selectedStartDate = viewModel.selectedStartDate.startOfDay()
+                        
+                        if viewModel.selectedStartDate > viewModel.selectedEndDate {
+                            viewModel.selectedEndDate = viewModel.selectedStartDate.endOfDay()
+                        }
+                        
+                        viewModel.loadTransactions()
                     }
                     
-                    Divider().padding(.leading, 8)
-                    HStack {
-                        Text("Конец")
-                        Spacer()
-                        DateLabel(date: viewModel.selectedEndDate)
-                            .overlay {
-                                DatePicker(
-                                    selection: $viewModel.selectedEndDate,
-                                    displayedComponents: .date
-                                ){}.colorMultiply(.clear)
-                                    .tint(Color("AccentColor"))
-                                    .onChange(of: viewModel.selectedEndDate) {
-                                        viewModel.selectedEndDate = viewModel.selectedEndDate.endOfDay()
-                                        
-                                        if viewModel.selectedEndDate < viewModel.selectedStartDate {
-                                            viewModel.selectedStartDate = viewModel.selectedEndDate.startOfDay()
-                                        }
-                                    }
-                            }
+                    DatePicker(
+                        "Конец",
+                        selection: $viewModel.selectedEndDate,
+                        displayedComponents: .date
+                    )
+                    .tint(Color("AccentColor"))
+                    .onChange(of: viewModel.selectedEndDate) {
+                        viewModel.selectedEndDate = viewModel.selectedEndDate.endOfDay()
+                        
+                        if viewModel.selectedEndDate < viewModel.selectedStartDate {
+                            viewModel.selectedStartDate = viewModel.selectedEndDate.startOfDay()
+                        }
+                        
+                        viewModel.loadTransactions()
                     }
                     
-                    Divider().padding(.leading, 8)
                     HStack {
                         Text("Сортировка")
                         Spacer()
                         Menu(viewModel.sort == .byDate ? "По дате" : "По сумме") {
                             Button("По дате", action: {
-                                viewModel.sortTransactions(sortBy: .byDate)
+                                viewModel.onSort(sortBy: .byDate)
                             })
                             Button("По сумме", action: {
-                                viewModel.sortTransactions(sortBy: .byAmount)
+                                viewModel.onSort(sortBy: .byAmount)
                             })
                         }
                     }
-                    .padding(.top, 4)
                     
-                    Divider().padding(.leading, 8)
                     HStack {
                         Text("Всего")
                         Spacer()
-                        Text(viewModel.sum)
+                        if case .processing(let processingViewModel) = viewModel.state {
+                            Text(processingViewModel.reason.balanceText)
+                        } else if case .idle(let idleViewModel) = viewModel.state {
+                            Text(idleViewModel.totalAmount)
+                        }
                     }
-                    .padding(.top, 4)
                 }
-                .padding()
-                .background(Color.white)
-                .cornerRadius(10)
-                
-                HStack {
-                    Text("ОПЕРАЦИИ")
-                        .font(.subheadline)
-                        .foregroundColor(Color.secondary)
-                    Spacer()
-                }
-                .padding(.top, 10)
 
-                VStack{
-                    if viewModel.isLoading {
-                        ProgressView("Загрузка транзакций...")
-                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-                    } else if  viewModel.transactions.count == 0 {
-                        Text("Операций за данный период нет")
-                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-                    } else if viewModel.transactions.count > 0 {
-                            List(viewModel.transactions) { transaction in
+                Section("Операции") {
+                    switch viewModel.state {
+                    case .processing(let processingViewModel):
+                        ProgressView(processingViewModel.reason.transactionsText)
+                            .frame(maxWidth: .infinity, alignment: .center)
+                    case .error(_):
+                        // TODO: научиться ретраить обновление если можно
+                        Button(
+                            action: { viewModel.loadTransactions()},
+                            label: { Text("Повторить загрузку") }
+                        )
+                        .frame(maxWidth: .infinity, alignment: .center)
+                    case .idle(let idleViewModel):
+                        if  idleViewModel.transactions.count == 0 {
+                            Text("Операций за данный период нет")
+                                .frame(maxWidth: .infinity, alignment: .center)
+                        } else {
+                            ForEach(idleViewModel.transactions) { transaction in
                                 TransactionRow(transaction: transaction)
                                     .contentShape(Rectangle())
                                     .onTapGesture {
                                         viewModel.editTransactionViewModel.show(
-                                            transactionId: transaction.id,
-                                            direction: viewModel.direction)
+                                        transactionId: transaction.id,
+                                        direction: viewModel.direction)
                                     }
                             }
-                            .listStyle(.plain)
+                        }
                     }
                 }
-                .background(Color.white)
-                .cornerRadius(10)
             }
-            .padding()
             .background(Color("BackgroundColor"))
         }
         .navigationTitle("Моя история")
@@ -117,7 +103,8 @@ struct HistoryView: View {
                         direction: viewModel.direction,
                         selectedStartDate: viewModel.selectedStartDate,
                         selectedEndDate: viewModel.selectedEndDate,
-                        service: viewModel.service
+                        service: viewModel.transactionsService,
+                        accountId: viewModel.account?.id ?? 1
                     )
                         .navigationTitle("Анализ")
                         .background(Color("BackgroundColor"))
@@ -126,37 +113,35 @@ struct HistoryView: View {
                 }
             }
         }
-        // TODO: подумать про гонки
-        .onChange(of: viewModel.selectedStartDate) {
+        .task {
             viewModel.loadTransactions()
         }
-        .onChange(of: viewModel.selectedEndDate) {
-            viewModel.loadTransactions()
-        }
-        .onAppear {
-            viewModel.loadTransactions()
+        .alert("Ошибка", isPresented: $viewModel.showingAlert) {
+            Button("OK"){}
+        } message: {
+            if case .error(let errorViewModel) = viewModel.state {
+                Text(errorViewModel.message)
+            }
         }
         .fullScreenCover(isPresented: $viewModel.editTransactionViewModel.showingDetailSheet) {
             TransactionEditView(viewModel: viewModel.editTransactionViewModel)
+                .onDisappear() {
+                    viewModel.loadTransactions()
+                }
         }
-    }
-}
-
-struct DateLabel: View {
-    var date: Date
-    var body: some View {
-        Text(date.formattedDayMonthYear())
-            .padding(.horizontal, 10)
-            .padding(.vertical, 5)
-            .background(Color("AccentColor").opacity(0.2))
-            .cornerRadius(8)
     }
 }
 
 #Preview {
-    HistoryView(viewModel: .init(
+    HistoryView(viewModel: HistoryViewModel(
+        state: .processing(HistoryViewModel.ProcessingViewModel(reason: .loading)),
         direction: Direction.income,
-        service: MockTransactionsService(),
-        editTransactionViewModel: .init(transactionsService: MockTransactionsService(), categoriesService: MockCategoriesService()),
-        createTransactionViewModel: .init(transactionsService: MockTransactionsService(), categoriesService: MockCategoriesService())))
+        selectedStartDate: Date().startOfDayMonthAgo(),
+        selectedEndDate: Date().endOfDay(),
+        transactionsService: MockTransactionsService(),
+        accountService: MockBankAccountsService(),
+        editTransactionViewModel: EditTransactionViewModel(
+            transactionsService: MockTransactionsService(),
+            categoriesService: MockCategoriesService())
+    ))
 }

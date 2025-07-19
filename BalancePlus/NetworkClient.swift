@@ -100,10 +100,10 @@ class NetworkClient {
         self.jsonEncoder = jsonEncoder
 
         self.jsonDecoder.dateDecodingStrategy = .iso8601withFractionalSeconds
-        self.jsonDecoder.keyDecodingStrategy = .convertFromSnakeCase
+        self.jsonDecoder.keyDecodingStrategy = .useDefaultKeys
 
         self.jsonEncoder.dateEncodingStrategy = .iso8601withFractionalSeconds
-        self.jsonEncoder.keyEncodingStrategy = .convertToSnakeCase
+        self.jsonEncoder.keyEncodingStrategy = .useDefaultKeys
         
         self.authToken = token
     }

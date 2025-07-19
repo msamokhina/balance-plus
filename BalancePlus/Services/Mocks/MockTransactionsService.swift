@@ -12,15 +12,6 @@ enum TransactionsSortType: CaseIterable {
     }
 }
 
-protocol TransactionsServiceProtocol {
-    var mockTransactions: [Transaction] { get }
-    func fetchTransactions(from startDate: Date, to endDate: Date) async throws -> [Transaction]
-    func fetchTransactionsByDirection(from startDate: Date, to endDate: Date, direction: Direction, sortBy: TransactionsSortType) async throws -> [Transaction]
-    func createTransaction(_ transaction: Transaction) async throws -> Transaction
-    func updateTransaction(_ transaction: Transaction) async throws -> Transaction
-    func deleteTransaction(withID transactionID: Int) async throws
-}
-
 final class MockTransactionsService: TransactionsServiceProtocol {
     private(set) var mockTransactions: [Transaction] = []
     private var nextID: Int = 0 // Для генерации уникальных ID для новых транзакций
@@ -86,7 +77,7 @@ final class MockTransactionsService: TransactionsServiceProtocol {
         nextID += mockTransactions.count
     }
 
-    func fetchTransactions(from startDate: Date, to endDate: Date) async throws -> [Transaction] {
+    func fetchTransactions(accountId: Int = 0, from startDate: Date, to endDate: Date) async throws -> [Transaction] {
         // Имитация сетевой задержки
         try await Task.sleep(nanoseconds: 500_000_000) // 0.5 секунды
 
@@ -95,47 +86,17 @@ final class MockTransactionsService: TransactionsServiceProtocol {
         }.sorted { $0.transactionDate < $1.transactionDate }
     }
     
-    func fetchTransactionsByDirection(from startDate: Date, to endDate: Date, direction: Direction, sortBy: TransactionsSortType) async throws -> [Transaction] {
-        // Имитация сетевой задержки
-        try await Task.sleep(nanoseconds: 500_000_000) // 0.5 секунды
-
-        var transactions = mockTransactions.filter { transaction in
-            transaction.category.direction == direction &&
-            transaction.transactionDate >= startDate &&
-            transaction.transactionDate <= endDate
-        }
+    func fetchTransaction(id: Int) async throws -> Transaction {
+        try await Task.sleep(nanoseconds: 500_000_000)
         
-        switch sortBy {
-        case .byDate:
-            // По дате сортируем по убыванию, сверху всегда более свежие оперции
-            transactions = transactions.sorted { $0.transactionDate < $1.transactionDate }
-        case .byAmount:
-            // По цене сортируем по возрастанию, предполагаю, что пользователю в первую очередь интересны крупные расходы
-            transactions = transactions.sorted { $0.amount > $1.amount }
-        }
-        
-        return transactions
+        return mockTransactions.first(where: { $0.id == id })!
     }
-
-    func createTransaction(_ transaction: Transaction) async throws -> Transaction {
+    
+    func createTransaction(accountId: Int, categoryId: Int, amount: String, transactionDate: Date, comment: String) async throws {
         // Имитация сетевой задержки
         try await Task.sleep(nanoseconds: 500_000_000) // 0.5 секунды
 
-        let newTransaction = Transaction(
-            id: nextID,
-            account: transaction.account,
-            category: transaction.category,
-            amount: transaction.amount,
-            transactionDate: transaction.transactionDate,
-            comment: transaction.comment,
-            createdAt: Date(),
-            updatedAt: Date()
-        )
-
-        mockTransactions.append(newTransaction)
-        nextID += 1
-        print("MockTransactionsService: Создана новая транзакция с ID \(newTransaction.id)")
-        return newTransaction
+        mockTransactions[0]
     }
 
     func updateTransaction(_ transaction: Transaction) async throws -> Transaction {
@@ -155,18 +116,18 @@ final class MockTransactionsService: TransactionsServiceProtocol {
         return updatedTransaction
     }
 
-    func deleteTransaction(withID transactionID: Int) async throws {
+    func deleteTransaction(id: Int) async throws {
         // Имитация сетевой задержки
         try await Task.sleep(nanoseconds: 500_000_000) // 0.5 секунды
 
         let initialCount = mockTransactions.count
-        mockTransactions.removeAll { $0.id == transactionID }
+        mockTransactions.removeAll { $0.id == id }
 
         if mockTransactions.count == initialCount {
             // Если количество транзакций не изменилось, значит, транзакция не была найдена
-            throw MockServiceError.notFound(message: "Транзакция с ID \(transactionID) не найдена для удаления")
+            throw MockServiceError.notFound(message: "Транзакция с ID \(id) не найдена для удаления")
         }
-        print("MockTransactionsService: Транзакция с ID \(transactionID) удалена")
+        print("MockTransactionsService: Транзакция с ID \(id) удалена")
     }
 }
 

@@ -6,13 +6,15 @@ struct AnalyseVCRepresentable: UIViewControllerRepresentable {
     let selectedStartDate: Date
     let selectedEndDate: Date
     let service: TransactionsServiceProtocol
+    let accountId: Int
     
     func makeUIViewController(context: Context) -> UIViewController {
         AnalyseViewController(
             selectedStartDate: selectedStartDate,
             selectedEndDate: selectedEndDate,
             direction: direction,
-            service: service
+            service: service,
+            accountId: accountId
         )
     }
     
@@ -40,17 +42,30 @@ class AnalyseViewController: UIViewController, UITableViewDataSource, UITableVie
     var selectedStartDate: Date
     var selectedEndDate: Date
     private let direction: Direction
-    private var sortBy: TransactionsSortType = .byDate
+    private var sortBy: TransactionsSortType = .byDate {
+        didSet {
+            updateSortCellUI()
+        }
+    }
 
+    let accountId: Int
+    private var isLoading: Bool = false {
+        didSet {
+            updateTransactionsSection()
+        }
+    }
+    
     init(selectedStartDate: Date,
          selectedEndDate: Date,
          direction: Direction,
-         service: TransactionsServiceProtocol
+         service: TransactionsServiceProtocol,
+         accountId: Int
     ) {
         self.selectedStartDate = selectedStartDate
         self.selectedEndDate = selectedEndDate
         self.direction = direction
         self.service = service
+        self.accountId = accountId
         
         super.init(nibName: nil, bundle: nil)
         
@@ -61,7 +76,7 @@ class AnalyseViewController: UIViewController, UITableViewDataSource, UITableVie
             TotalAmountContent(title: "Сумма", value: "Загрузка...")
         ]
         self.sections.append(TableSection(id: "Config", data: initialConfigData))
-        self.sections.append(TableSection(id: "Transactions", title: "Операции"))
+        self.sections.append(TableSection(id: "Transactions", title: "Операции", data: [LoadingContent()]))
     }
     
     required init?(coder: NSCoder) {
@@ -82,25 +97,50 @@ class AnalyseViewController: UIViewController, UITableViewDataSource, UITableVie
         tableView.register(TotalAmountCell.self, forCellReuseIdentifier: "TotalAmountCell")
         tableView.register(DateCell.self, forCellReuseIdentifier: "DateCell")
         tableView.register(SortCell.self, forCellReuseIdentifier: "SortCell")
+        tableView.register(LoadingCell.self, forCellReuseIdentifier: "LoadingCell")
+        tableView.register(ErrorCell.self, forCellReuseIdentifier: "ErrorCell")
+        tableView.register(EmptyStateCell.self, forCellReuseIdentifier: "EmptyStateCell")
         
         Task {
             await fetchData()
         }
     }
     
+    func sortTransactions(transactions: [Transaction]) -> [Transaction] {
+        var sortedTransactions: [Transaction] = []
+        if sortBy == .byDate {
+            // По дате сортируем по убыванию, сверху всегда более свежие оперции
+            sortedTransactions = transactions.sorted { $0.transactionDate < $1.transactionDate }
+        } else {
+            // По цене сортируем по возрастанию, предполагаю, что пользователю в первую очередь интересны крупные расходы
+            sortedTransactions = transactions.sorted { $0.amount > $1.amount }
+        }
+        
+        return sortedTransactions
+    }
+    
     func fetchData() async {
+        await MainActor.run {
+            self.isLoading = true
+        }
+        
         do {
-            let fetchedTransactions = try await service.fetchTransactionsByDirection(
+            var fetchedTransactions = try await service.fetchTransactions(
+                accountId: accountId,
                 from: selectedStartDate,
-                to: selectedEndDate,
-                direction: direction,
-                sortBy: sortBy
+                to: selectedEndDate
             )
+            fetchedTransactions = fetchedTransactions.filter { $0.category.direction == direction }
+            let sortedTransactions = sortTransactions(transactions: fetchedTransactions)
             await MainActor.run {
-                self.updateUI(with: fetchedTransactions)
+                self.updateUI(with: sortedTransactions)
+                self.isLoading = false
             }
         } catch {
-            print("Ошибка загрузки данных: \(error)")
+            await MainActor.run {
+                self.isLoading = false
+                self.showErrorState(message: "Не удалось загрузить данные. Проверьте подключение к интернету или попробуйте позже.")
+            }
         }
     }
     
@@ -150,13 +190,66 @@ class AnalyseViewController: UIViewController, UITableViewDataSource, UITableVie
             sections[configIndex] = configSection
             tableView.reloadSections(IndexSet(integer: configIndex), with: .automatic)
         }
-        
+
         if let index = sections.firstIndex(where: { $0.id == "Transactions" }) {
             var sectionToUpdate = sections[index]
-            sectionToUpdate.data = convert(data: data)
+            if data.isEmpty {
+                sectionToUpdate.data = [EmptyStateContent(message: "Операций за выбранный период не найдено.")]
+            } else {
+                sectionToUpdate.data = convert(data: data)
+            }
             sections[index] = sectionToUpdate
             tableView.reloadSections(IndexSet(integer: index), with: .automatic)
         }
+    }
+    
+    private func updateSortCellUI() {
+        guard let configIndex = sections.firstIndex(where: { $0.id == "Config" }),
+              let sortContentIndex = sections[configIndex].data.firstIndex(where: { $0.reuseIdentifier == "SortCell" }) else {
+            return
+        }
+        
+        var configSection = sections[configIndex]
+        let newSortContent = SortContent(title: "Сортировка", value: self.sortBy)
+        configSection.data[sortContentIndex] = newSortContent
+        sections[configIndex] = configSection
+        
+        tableView.reloadRows(at: [IndexPath(row: sortContentIndex, section: configIndex)], with: .automatic)
+    }
+    
+    private func updateTransactionsSection() {
+        guard let transactionsIndex = sections.firstIndex(where: { $0.id == "Transactions" }) else { return }
+
+        var transactionsSection = sections[transactionsIndex]
+
+        if isLoading {
+            transactionsSection.data = [LoadingContent()]
+        } else {
+            if transactionsSection.data.first?.reuseIdentifier == "LoadingCell" || transactionsSection.data.first?.reuseIdentifier == "ErrorCell" {
+                transactionsSection.data = []
+            }
+        }
+        sections[transactionsIndex] = transactionsSection
+        tableView.reloadSections(IndexSet(integer: transactionsIndex), with: .automatic)
+    }
+    
+    private func showErrorState(message: String) {
+        guard let transactionsIndex = sections.firstIndex(where: { $0.id == "Transactions" }) else { return }
+        
+        var transactionsSection = sections[transactionsIndex]
+        transactionsSection.data = [ErrorContent(message: message)]
+        sections[transactionsIndex] = transactionsSection
+        tableView.reloadSections(IndexSet(integer: transactionsIndex), with: .automatic)
+        
+        let alertController = UIAlertController(
+            title: "Ошибка",
+            message: message,
+            preferredStyle: .alert
+        )
+        let okAction = UIAlertAction(title: "OK", style: .default, handler: nil)
+        alertController.addAction(okAction)
+        
+        self.present(alertController, animated: true, completion: nil)
     }
     
     func numberOfSections(in tableView: UITableView) -> Int {
@@ -224,7 +317,8 @@ struct AnalyseViewController_Previews: PreviewProvider {
             direction: Direction.income,
             selectedStartDate: Date().startOfDayMonthAgo(),
             selectedEndDate: Date().endOfDay(),
-            service: MockTransactionsService()
+            service: MockTransactionsService(),
+            accountId: 123
         )
             .background(Color("BackgroundColor"))
     }

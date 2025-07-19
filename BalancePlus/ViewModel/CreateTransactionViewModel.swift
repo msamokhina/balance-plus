@@ -4,6 +4,8 @@ import Foundation
 final class CreateTransactionViewModel {
     let transactionsService: TransactionsServiceProtocol
     let categoriesService: CategoriesServiceProtocol
+    let bankAccountService: BankAccountServiceProtocol
+    
     var showingDetailSheet = false
     var title = "Создать"
     var categories: [Category] = []
@@ -19,15 +21,16 @@ final class CreateTransactionViewModel {
     
     init(
          transactionsService: TransactionsServiceProtocol,
-         categoriesService: CategoriesServiceProtocol
+         categoriesService: CategoriesServiceProtocol,
+         bankAccountService: BankAccountServiceProtocol
     ) {
         self.transactionsService = transactionsService
         self.categoriesService = categoriesService
+        self.bankAccountService = bankAccountService
     }
     
     @MainActor
     func show(direction: Direction) {
-        errorMessage = nil
         showingDetailSheet = true
         fetchCategoriesByDirection(direction: direction)
         setTitle(direction: direction)
@@ -45,30 +48,31 @@ final class CreateTransactionViewModel {
     @MainActor
     func create() {
         if amountField.isEmpty || categoryField == nil {
+            errorMessage = "Заполните все поля"
             showingAlert = true
             return
         }
         
-        let comment = commentField.isEmpty == true ? nil : commentField
+        isLoading = true
+        errorMessage = nil
+        
+        let comment = commentField.isEmpty == true ? "" : commentField
         
         Task {
             do {
-                let account = try await MockBankAccountsService().fetchUserBankAccount()
-                let transaction: Transaction = Transaction(
-                    id: Int(Date().timeIntervalSince1970),
-                    account: account,
-                    category: categoryField!,
-                    amount: Decimal(string: amountField) ?? 0,
-                    transactionDate: dateField, comment: comment,
-                    createdAt: Date(),
-                    updatedAt: Date()
-                )
-                _ = try await transactionsService.createTransaction(transaction)
+                let account = try await bankAccountService.fetchUserBankAccount()
+                
+                _ = try await transactionsService.createTransaction(accountId: account.id, categoryId: categoryField!.id, amount: amountField, transactionDate: dateField, comment: comment)
                 
                 isLoading = false
                 dismiss()
             } catch {
-                errorMessage = "Что-то пошло не так"
+                if let networkError = error as? NetworkError {
+                    errorMessage = networkError.localizedDescription
+                } else {
+                    errorMessage = "Не удалось создать транзакцию"
+                }
+                showingAlert = true
                 isLoading = false
             }
         }
@@ -83,22 +87,21 @@ final class CreateTransactionViewModel {
         }
     }
     
-    func setFields(_ transaction: Transaction?) {
-        commentField = ""
-        dateField = Date()
-        amountField = "0"
-        categoryField = nil
-    }
-    
     @MainActor
     func fetchCategoriesByDirection(direction: Direction) {
         isLoading = true
+        errorMessage = nil
         Task {
             do {
                 categories = try await categoriesService.fetchCategoriesByDirection(for: direction)
                 isLoading = false
             } catch {
-                errorMessage = "Не удалось загрузить категории"
+                if let networkError = error as? NetworkError {
+                    errorMessage = networkError.localizedDescription
+                } else {
+                    errorMessage = "Не удалось загрузить категории"
+                }
+                showingAlert = true
                 isLoading = false
             }
         }

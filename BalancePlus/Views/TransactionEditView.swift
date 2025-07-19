@@ -12,17 +12,14 @@ struct TransactionEditView: View {
                 if viewModel.isLoading {
                     ProgressView("Подождите...")
                         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-                } else if viewModel.errorMessage != nil {
-                    Text(viewModel.errorMessage ?? "Ошибка")
-                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
                 } else {
                     List() {
                         Section() {
-                            CategorySelectView(currentCategory: $viewModel.categoryField, options: viewModel.categories)
-                            AmountView(amount: $viewModel.amountField, isFocused: $amountIsFocused)
-                            DateView(date: $viewModel.dateField)
-                            TimeView(date: $viewModel.dateField)
-                            CommentView(comment: $viewModel.commentField, isFocused: $commentIsFocused)
+                            CategorySelectView(currentCategory: $viewModel.category, options: viewModel.categories)
+                            AmountView(amount: $viewModel.amount, isFocused: $amountIsFocused)
+                            DateView(date: $viewModel.date)
+                            TimeView(date: $viewModel.date)
+                            CommentView(comment: $viewModel.comment, isFocused: $commentIsFocused)
                         }
                         Section() {
                             DeleteTransactionView(action: viewModel.deleteTransaction)
@@ -42,7 +39,7 @@ struct TransactionEditView: View {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Сохранить") {
                         viewModel.save()
-                    }
+                    }.disabled(viewModel.isLoading)
                 }
             }
             .simultaneousGesture(
@@ -58,6 +55,11 @@ struct TransactionEditView: View {
                         }
                     }
             )
+            .alert("Ошибка", isPresented: $viewModel.showingAlert) {
+                Button("OK"){}
+            } message: {
+                Text(viewModel.errorMessage ?? "")
+            }
         }.tint(Color("NavigationColor"))
     }
 }
@@ -93,7 +95,7 @@ struct AmountView: View {
             .focused($isFocused)
             .keyboardType(.decimalPad)
             .multilineTextAlignment(.trailing)
-            .onChange(of: amount) { newValue in
+            .onChange(of: amount) { oldValue, newValue in
                 validateAndFormatInput(newValue)
             }
         }
