@@ -17,7 +17,7 @@ struct MainTabView: View {
                 TransactionsListView(viewModel: viewModel.incomeTransactions)
             }
             Tab("Счет", image: "account") {
-                AccountView()
+                AccountView(viewModel: viewModel.account)
             }
             Tab("Статьи", image: "categories") {
                 CategoriesView(viewModel: viewModel.categories)
@@ -30,5 +30,5 @@ struct MainTabView: View {
 }
 
 #Preview {
-    MainTabView(viewModel: .init(categoriesService: MockCategoriesService(), transactionsService: MockTransactionsService()))
+    MainTabView(viewModel: .init(categoriesService: MockCategoriesService(), transactionsService: MockTransactionsService(), bankAccountService: MockBankAccountsService()))
 }

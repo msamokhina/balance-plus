@@ -1,10 +1,5 @@
 import Foundation
 
-protocol CategoriesServiceProtocol {
-    func fetchAllCategories() async throws -> [Category]
-    func fetchCategoriesByDirection(for direction: Direction) async throws -> [Category]
-}
-
 final class MockCategoriesService: CategoriesServiceProtocol {
     private let mockCategories: [Category] = [
         // Категории доходов

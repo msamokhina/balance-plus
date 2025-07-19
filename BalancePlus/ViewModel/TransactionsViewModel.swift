@@ -12,26 +12,24 @@ struct TransactionViewModel: Identifiable {
     let direction: Direction
 }
 
-enum SortBy {
-    case byDate
-    case byAmount
-}
-
 @Observable
 final class TransactionsViewModel {
+    let historyViewModel: HistoryViewModel
     var editTransactionViewModel: EditTransactionViewModel
     var createTransactionViewModel: CreateTransactionViewModel
     var transactions: [TransactionViewModel] = []
     var isLoading: Bool = false
     var errorMessage: String?
-    private(set) var sort: SortBy = .byDate
     
+    var account: BankAccount?
+    var showingAlert: Bool = false
     let service: TransactionsServiceProtocol
+    let accountService: BankAccountServiceProtocol
     private let convert: (Transaction) -> TransactionViewModel = {
         transaction in TransactionViewModel(
             id: transaction.id,
             amount: transaction.amount,
-            amountStr: "\(Int(truncating: NSDecimalNumber(decimal: transaction.amount)).formatted()) \(transaction.account.currency.symbol)",
+            amountStr: "\(amountConverter(transaction.amount)) \(transaction.account.currency.symbol)",
             date: transaction.transactionDate,
             dateStr: "\(transaction.transactionDate)",
             comment: transaction.comment,
@@ -45,36 +43,37 @@ final class TransactionsViewModel {
     var selectedStartDate: Date
     var selectedEndDate: Date
     
+    private static func amountConverter(_ value: Decimal) -> String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        formatter.locale = Locale.current
+        formatter.maximumFractionDigits = 2
+        formatter.usesGroupingSeparator = true
+        return formatter.string(from: value as NSDecimalNumber) ?? value.description
+    }
+    
     init(direction: Direction,
          selectedStartDate: Date = Date().startOfDay(),
          selectedEndDate: Date = Date().endOfDay(),
          service: TransactionsServiceProtocol,
+         accountService: BankAccountServiceProtocol,
          editTransactionViewModel: EditTransactionViewModel,
-         createTransactionViewModel: CreateTransactionViewModel
+         createTransactionViewModel: CreateTransactionViewModel,
+         historyViewModel: HistoryViewModel
     ) {
         self.direction = direction
         self.selectedStartDate = selectedStartDate
         self.selectedEndDate = selectedEndDate
         self.service = service
+        self.accountService = accountService
         self.editTransactionViewModel = editTransactionViewModel
         self.createTransactionViewModel = createTransactionViewModel
+        
+        self.historyViewModel = historyViewModel
     }
     
     var sum: String {
-        let sum = Int(truncating: NSDecimalNumber(decimal: transactions.map {$0.amount}.reduce(0, +)))
-        return "\(sum.formatted()) ₽"
-    }
-    
-    func sortTransactions(sortBy: SortBy = .byDate) {
-        if sortBy == .byDate {
-            // По дате сортируем по убыванию, сверху всегда более свежие оперции
-            transactions = transactions.sorted { $0.date < $1.date }
-            sort = .byDate
-        } else {
-            // По цене сортируем по возрастанию, предполагаю, что пользователю в первую очередь интересны крупные расходы
-            transactions = transactions.sorted { $0.amount > $1.amount }
-            sort = .byAmount
-        }
+        return "\(TransactionsViewModel.amountConverter(transactions.map {$0.amount}.reduce(0, +))) \(account?.currency.symbol ?? Currency.rub.symbol)"
     }
     
     @MainActor
@@ -83,12 +82,18 @@ final class TransactionsViewModel {
         errorMessage = nil
         Task {
             do {
-                let fetchedTransactions = try await service.fetchTransactions(from: selectedStartDate, to: selectedEndDate)
+                let fetchedAccount = try await accountService.fetchUserBankAccount()
+                account = fetchedAccount
+                let fetchedTransactions = try await service.fetchTransactions(accountId: fetchedAccount.id, from: selectedStartDate, to: selectedEndDate)
                 transactions = fetchedTransactions.filter { $0.category.direction == direction }.map{convert($0)}
-                self.sortTransactions(sortBy: .byDate)
                 isLoading = false
             } catch {
-                errorMessage = "Не удалось загрузить транзакции"
+                if let networkError = error as? NetworkError {
+                    errorMessage = networkError.localizedDescription
+                } else {
+                    errorMessage = "Не удалось загрузить транзакции"
+                }
+                showingAlert = true
                 isLoading = false
             }
         }

@@ -4,60 +4,102 @@ import Foundation
 final class EditTransactionViewModel {
     let transactionsService: TransactionsServiceProtocol
     let categoriesService: CategoriesServiceProtocol
+    
     var showingDetailSheet = false
+    var showingAlert: Bool = false
     var title = "Редактировать"
     var transaction: Transaction?
-    var categories: [Category] = []
-    var isLoading: Bool = false
     var errorMessage: String?
+    var isLoading: Bool = false
+    private let balanceConverter: BalanceConverterProtocol
     
-    var commentField: String = ""
-    var amountField: String = ""
-    var categoryField: Category?
-    var dateField: Date = Date()
+    var comment: String = ""
+    var amount: String = ""
+    var category: Category?
+    var date: Date = Date()
+    
+    var categories: [Category] = []
     
     init(
-         transactionsService: TransactionsServiceProtocol,
-         categoriesService: CategoriesServiceProtocol
+        transactionsService: TransactionsServiceProtocol,
+        categoriesService: CategoriesServiceProtocol
     ) {
         self.transactionsService = transactionsService
         self.categoriesService = categoriesService
+        self.balanceConverter = BalanceConverter()
     }
     
     @MainActor
     func show(transactionId: Int, direction: Direction) {
-        errorMessage = nil
         showingDetailSheet = true
-        fetchCategoriesByDirection(direction: direction)
-        transaction = transactionsService.mockTransactions.first(where: { $0.id == transactionId })
-        setFields(transaction)
+        fetchData(transactionId: transactionId, direction: direction)
         setTitle(direction: direction)
     }
 
+    @MainActor
+    func fetchData(transactionId: Int, direction: Direction) {
+        isLoading = true
+        errorMessage = nil
+        Task {
+            do {
+                let fetchedTransaction = try await transactionsService.fetchTransaction(id: transactionId)
+                transaction = fetchedTransaction
+                categories = try await categoriesService.fetchCategoriesByDirection(for: direction)
+   
+                self.category = fetchedTransaction.category
+                self.amount = balanceConverter.convert(fetchedTransaction.amount)
+                self.date = fetchedTransaction.transactionDate
+                self.comment = fetchedTransaction.comment ?? ""
+                
+                self.categories = categories
+            } catch {
+                if let networkError = error as? NetworkError {
+                    errorMessage = networkError.localizedDescription
+                } else {
+                    errorMessage = "Произошла непредвиденная ошибка."
+                }
+                showingAlert = true
+            }
+        }
+        isLoading = false
+    }
+    
     func dismiss() {
         showingDetailSheet = false
     }
     
     @MainActor
     func save() {
+        if category == nil {
+            errorMessage = "Заполните все поля"
+            showingAlert = true
+            return
+        }
+        
         guard transaction != nil else { return }
+        isLoading = true
+        errorMessage = nil
         
         var newTransaction = transaction
-        if categoryField != nil {
-            newTransaction?.category = categoryField!
-        }
-        newTransaction?.amount = Decimal(string: amountField) ?? 0
-        newTransaction?.transactionDate = dateField
-        newTransaction?.comment = commentField.isEmpty == true ? nil : commentField
         
-        isLoading = true
+        newTransaction?.category = category!
+    
+        newTransaction?.amount = balanceConverter.convert(amount)
+        newTransaction?.transactionDate = date
+        newTransaction?.comment = comment.isEmpty == true ? nil : comment
+
         Task {
             do {
                 transaction = try await transactionsService.updateTransaction(newTransaction!)
                 isLoading = false
                 dismiss()
             } catch {
-                errorMessage = "Не удалось обновить категорию"
+                if let networkError = error as? NetworkError {
+                    errorMessage = networkError.localizedDescription
+                } else {
+                    errorMessage = "Произошла непредвиденная ошибка."
+                }
+                showingAlert = true
                 isLoading = false
             }
         }
@@ -72,40 +114,24 @@ final class EditTransactionViewModel {
         }
     }
     
-    func setFields(_ transaction: Transaction?) {
-        guard let transaction = transaction else { return }
-        commentField = transaction.comment ?? ""
-        dateField = transaction.transactionDate
-        amountField = "\(transaction.amount)"
-        categoryField = transaction.category
-    }
-    
-    @MainActor
-    func fetchCategoriesByDirection(direction: Direction) {
-        isLoading = true
-        Task {
-            do {
-                categories = try await categoriesService.fetchCategoriesByDirection(for: direction)
-                isLoading = false
-            } catch {
-                errorMessage = "Не удалось загрузить категории"
-                isLoading = false
-            }
-        }
-    }
-    
     @MainActor
     func deleteTransaction() {
         guard let transactionId = transaction?.id else { return }
         
         isLoading = true
+        errorMessage = nil
         Task {
             do {
-                try await transactionsService.deleteTransaction(withID: transactionId)
+                try await transactionsService.deleteTransaction(id: transactionId)
                 isLoading = false
                 dismiss()
             } catch {
-                errorMessage = "Не удалось удалить транзакцию"
+                if let networkError = error as? NetworkError {
+                    errorMessage = networkError.localizedDescription
+                } else {
+                    errorMessage = "Произошла непредвиденная ошибка."
+                }
+                showingAlert = true
                 isLoading = false
             }
         }

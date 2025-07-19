@@ -58,12 +58,12 @@ struct TransactionCreateView: View {
             .alert("Ошибка", isPresented: $viewModel.showingAlert) {
                 Button("OK") {}
             } message: {
-                Text("Заполните все поля")
+                Text(viewModel.errorMessage ?? "Ошибка")
             }
         }.tint(Color("NavigationColor"))
     }
 }
 
 #Preview {
-    TransactionCreateView(viewModel: CreateTransactionViewModel(transactionsService: MockTransactionsService(), categoriesService: MockCategoriesService()))
+    TransactionCreateView(viewModel: CreateTransactionViewModel(transactionsService: MockTransactionsService(), categoriesService: MockCategoriesService(), bankAccountService: MockBankAccountsService()))
 }

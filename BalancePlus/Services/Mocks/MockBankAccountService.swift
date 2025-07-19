@@ -1,11 +1,6 @@
 import Foundation
 
-protocol BankAccountsServiceProtocol {
-    func fetchUserBankAccount() async throws -> BankAccount
-    func updateBankAccount(currency: Currency, balance: Decimal) async throws -> BankAccount
-}
-
-final class MockBankAccountsService: BankAccountsServiceProtocol {
+final class MockBankAccountsService: BankAccountServiceProtocol {
     private static let formatter = ISO8601DateFormatter.withFractionalSeconds
     @Published private var mockBankAccounts: [BankAccount] = [
         BankAccount(
@@ -43,7 +38,7 @@ final class MockBankAccountsService: BankAccountsServiceProtocol {
         return mockBankAccounts.first!
     }
 
-    func updateBankAccount(currency: Currency, balance: Decimal) async throws -> BankAccount {
+    func updateBankAccount(id: Int = 0, name: String = "", balance: Decimal, currency: Currency) async throws -> BankAccount {
         // Имитация сетевой задержки
         try await Task.sleep(nanoseconds: 500_000_000) // 0.5 секунды
 
