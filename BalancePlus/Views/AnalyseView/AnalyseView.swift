@@ -1,5 +1,6 @@
 import SwiftUI
 import UIKit
+import PieChart
 
 struct AnalyseVCRepresentable: UIViewControllerRepresentable {
     let direction: Direction
@@ -76,6 +77,7 @@ class AnalyseViewController: UIViewController, UITableViewDataSource, UITableVie
             TotalAmountContent(title: "Сумма", value: "Загрузка...")
         ]
         self.sections.append(TableSection(id: "Config", data: initialConfigData))
+        self.sections.append(TableSection(id: "PieChart", data: []))
         self.sections.append(TableSection(id: "Transactions", title: "Операции", data: [LoadingContent()]))
     }
     
@@ -93,6 +95,7 @@ class AnalyseViewController: UIViewController, UITableViewDataSource, UITableVie
         tableView.dataSource = self
         tableView.delegate = self
         
+        tableView.register(PieChartCell.self, forCellReuseIdentifier: "PieChartCell")
         tableView.register(TransactionCell.self, forCellReuseIdentifier: "TransactionCell")
         tableView.register(TotalAmountCell.self, forCellReuseIdentifier: "TotalAmountCell")
         tableView.register(DateCell.self, forCellReuseIdentifier: "DateCell")
@@ -160,6 +163,21 @@ class AnalyseViewController: UIViewController, UITableViewDataSource, UITableVie
         }
     }
     
+    private func getEntities(data: [Transaction]) -> [Entity] {
+        let groupedTransactions = Dictionary(grouping: data) { $0.category }
+        var categoryTotals: [Entity] = []
+        for (category, transactionsInThisCategory) in groupedTransactions {
+            let totalAmountForCategory = transactionsInThisCategory.reduce(0) { sum, transaction in
+                sum + transaction.amount
+            }
+
+            let categoryTotal = Entity(value: totalAmountForCategory, label: category.name)
+            categoryTotals.append(categoryTotal)
+        }
+        
+        return categoryTotals
+    }
+    
     func updateUI(with data: [Transaction]) {
         if let configIndex = sections.firstIndex(where: { $0.id == "Config" }) {
             var configSection = sections[configIndex]
@@ -197,6 +215,17 @@ class AnalyseViewController: UIViewController, UITableViewDataSource, UITableVie
                 sectionToUpdate.data = [EmptyStateContent(message: "Операций за выбранный период не найдено.")]
             } else {
                 sectionToUpdate.data = convert(data: data)
+            }
+            sections[index] = sectionToUpdate
+            tableView.reloadSections(IndexSet(integer: index), with: .automatic)
+        }
+        
+        if let index = sections.firstIndex(where: { $0.id == "PieChart" }) {
+            var sectionToUpdate = sections[index]
+            if data.isEmpty {
+                sectionToUpdate.data = []
+            } else {
+                sectionToUpdate.data = [PieChartContent(entities: getEntities(data: data))]
             }
             sections[index] = sectionToUpdate
             tableView.reloadSections(IndexSet(integer: index), with: .automatic)
@@ -320,6 +349,6 @@ struct AnalyseViewController_Previews: PreviewProvider {
             service: MockTransactionsService(),
             accountId: 123
         )
-            .background(Color("BackgroundColor"))
+        .background(Color("BackgroundColor"))
     }
 }

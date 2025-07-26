@@ -6,6 +6,7 @@ struct BalancePlusApp: App {
     let bankAccountService: BankAccountServiceProtocol
     let transactionsService: TransactionsServiceProtocol
 
+    @State private var showSplash: Bool = true
     
     init() {
         let networkClient = NetworkClient(token: "INSERT_TOKEN_HERE")
@@ -16,13 +17,19 @@ struct BalancePlusApp: App {
     
     var body: some Scene {
         WindowGroup {
-            MainTabView(
-                viewModel: MainTabViewModel(
-                    categoriesService: categoriesService,
-                    transactionsService: transactionsService,
-                    bankAccountService: bankAccountService
-                )
-            )
+            Group {
+                if showSplash {
+                    SplashView(showSplash: $showSplash)
+                } else {
+                    MainTabView(
+                        viewModel: MainTabViewModel(
+                            categoriesService: categoriesService,
+                            transactionsService: transactionsService,
+                            bankAccountService: bankAccountService
+                        )
+                    )
+                }
+            }
         }
     }
     
